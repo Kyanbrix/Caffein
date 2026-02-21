@@ -30,7 +30,7 @@ public class Caffein {
         return INSTANCE;
     }
 
-    static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException {
         getInstance().start();
     }
 
