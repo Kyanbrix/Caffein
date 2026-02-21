@@ -1,0 +1,112 @@
+package com.github.kyanbrix.component.command;
+
+import com.github.kyanbrix.utils.Constant;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.components.buttons.ButtonStyle;
+import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.section.Section;
+import net.dv8tion.jda.api.components.selections.StringSelectMenu;
+import net.dv8tion.jda.api.components.separator.Separator;
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
+import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import org.w3c.dom.Text;
+
+public class RoleSelectionCommand implements ICommand{
+    @Override
+    public void accept(MessageReceivedEvent event) {
+
+
+        if (event.getAuthor().getIdLong() != Constant.KIAN_ID) return;
+        Guild guild = event.getGuild();
+
+        Container container = Container.of(
+
+                TextDisplay.of("# **"+guild.getName()+"** Roles"),
+                TextDisplay.of("Select your roles to show your interests, this helps keep the community organized and ensures you see content that matters to you."),
+
+                Separator.createInvisible(Separator.Spacing.LARGE),
+                Separator.createInvisible(Separator.Spacing.LARGE),
+
+
+                Section.of(
+                        Thumbnail.fromUrl("https://media.discordapp.net/attachments/1239853996663898184/1354168592630939718/equality.png?ex=699aaa07&is=69995887&hm=806e18758db68719231448e2628b8c97aad31ef1099e3281837d3c47683078e8&=&format=webp&quality=lossless"),
+                        TextDisplay.of("## Gender"),
+                        TextDisplay.of("Select your gender to help personalize your experience and roles in the community. This helps members connect and keeps interactions respectful and relevant. You can update your selection anytime.")
+                ),
+
+                Separator.createInvisible(Separator.Spacing.LARGE),
+
+                ActionRow.of(Button.of(ButtonStyle.SUCCESS,"he","Male",Emoji.fromUnicode("U+2642")),
+                        Button.of(ButtonStyle.SUCCESS,"she","Female",Emoji.fromUnicode("U+2640")),
+                        Button.of(ButtonStyle.SUCCESS,"gay","LGBTQIA+",Emoji.fromUnicode("U+1F308"))),
+
+                Separator.createDivider(Separator.Spacing.LARGE),
+
+                Section.of(
+
+                        Thumbnail.fromUrl("https://media.discordapp.net/attachments/1239853996663898184/1354168592396062863/birthday-cake.png?ex=699aaa07&is=69995887&hm=f51ffb8400a518f69f79aefadd99a435379d73193942d30f5cb4207c2b1570df&=&format=webp&quality=lossless"),
+                        TextDisplay.of("## Age"),
+                        TextDisplay.of("Select your age range to help us provide age-appropriate channels and content. This keeps the community safe and relevant for everyone. You can update your selection anytime.”")
+                ),
+                Separator.createInvisible(Separator.Spacing.LARGE),
+                ActionRow.of(
+                        StringSelectMenu.create("age")
+                                .addOption("18 below","minor")
+                                .addOption("18-21","teens")
+                                .addOption("21+","tito")
+                                .setPlaceholder("Select your age range")
+                                .build()
+                                .withUniqueId(1)),
+                Separator.createDivider(Separator.Spacing.LARGE),
+
+                Section.of(
+                        Thumbnail.fromUrl("https://cdn3.emoji.gg/emojis/480166-coffee.png"),
+                        TextDisplay.of("## Cafè Menu"),
+                        TextDisplay.of("Choose your color role to customize your name color. This personalizes your appearance in the server. You can update it anytime.")
+                ),
+                Separator.createInvisible(Separator.Spacing.LARGE),
+                ActionRow.of(StringSelectMenu.create("color")
+                                .addOption("Espresso","esp",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .addOption("Caffè Latte","cl",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .addOption("Cappuccino","cap",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .addOption("Caramel Macchiato","cm",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .addOption("Vanilla Latte","vl",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .addOption("Mocha","mocha",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .addOption("Iced Coffee","ic",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .addOption("Matcha Latte","matchalatte",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .addOption("Strawberry Milk","sm",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                        .addOption("Chocolate Drink","cd",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                        .addOption("Blueberry Yogurt","by",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                        .addOption("Lemonade","lem",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                        .addOption("Milk Tea","mt",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .addOption("Peach Iced Tea","peach",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .addOption("Hazelnut Latte","hazel",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
+                                .setMaxValues(5)
+                                .setPlaceholder("Select a role")
+                        .build()
+
+                        .withUniqueId(2))
+
+        );
+
+
+
+
+
+        event.getChannel().sendMessageComponents(container).useComponentsV2().queue();
+
+
+
+    }
+
+    @Override
+    public String commandName() {
+        return "command";
+    }
+
+
+}
