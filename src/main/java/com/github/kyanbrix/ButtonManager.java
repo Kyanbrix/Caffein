@@ -1,5 +1,7 @@
 package com.github.kyanbrix;
 
+import com.github.kyanbrix.component.button.FemaleButton;
+import com.github.kyanbrix.component.button.GayButton;
 import com.github.kyanbrix.component.button.IButton;
 import com.github.kyanbrix.component.button.MaleButton;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -17,6 +19,8 @@ public class ButtonManager extends ListenerAdapter {
 
     public ButtonManager() {
         this.addButtons(new MaleButton());
+        this.addButtons(new GayButton());
+        this.addButtons(new FemaleButton());
     }
 
 
