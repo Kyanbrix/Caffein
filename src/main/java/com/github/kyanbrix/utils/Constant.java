@@ -10,4 +10,5 @@ public class Constant {
     public static final long OWNER_ID = 909056906188972053L;
     public static final long KIAN_ID = 683613536823279794L;
 
+    public static final String PREFIX= "!";
 }
