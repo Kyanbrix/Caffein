@@ -35,16 +35,18 @@ public class Caffein {
     }
 
     public void start() throws IOException {
+
+
         jda = JDABuilder.createLight(
                         getToken(),
                         GatewayIntent.MESSAGE_CONTENT,
                         GatewayIntent.GUILD_MESSAGES,
                         GatewayIntent.GUILD_PRESENCES,
-                        GatewayIntent.GUILD_MEMBERS
+                        GatewayIntent.GUILD_MEMBERS,
+                        GatewayIntent.GUILD_INVITES
                 )
                 .disableCache(EnumSet.allOf(CacheFlag.class))
-                .addEventListeners(new BotReady(), new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new MemberJoined())
-                .setStatus(OnlineStatus.INVISIBLE)
+                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new MemberJoined(), new InviteTracker())
                 .setEnableShutdownHook(true)
                 .build();
     }
