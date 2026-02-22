@@ -64,10 +64,36 @@ public class RoleSelectionCommand implements ICommand{
                 Separator.createDivider(Separator.Spacing.LARGE),
 
                 Section.of(
+                        Thumbnail.fromUrl("https://cdn3.emoji.gg/emojis/49086-console.png"),
+                        TextDisplay.of("## Games"),
+                        TextDisplay.of("Select your game roles to show the games you play and unlock related channels and activities. This helps you connect with other members who share the same interests and find teammates more easily.")
+                ),
+                Separator.createInvisible(Separator.Spacing.SMALL),
+
+                ActionRow.of(
+                        StringSelectMenu.create("games")
+
+                                .addOption("Roblox","roblox",Emoji.fromFormatted("<:RobloxBiru:1475035117218173038>"))
+                                .addOption("Mobile Legends","ml",Emoji.fromFormatted("<:mlbb:1475035227695878274>"))
+                                .addOption("Dota 2","dota2",Emoji.fromFormatted("<:dota2:1475035303248134386>"))
+                                .addOption("League Legends","lol",Emoji.fromFormatted("<:LOL_LOGO:1475035182414434335>"))
+                                .addOption("Counter-Strike 2","cs2",Emoji.fromFormatted("<:emojigg_CS2:1475035360810635345>"))
+                                .addOption("Minecraft","minecraft",Emoji.fromFormatted("<:minecraft:1475035431643906118>"))
+                                .addOption("Valorant","val",Emoji.fromFormatted("<:Valorant:1475035499398824050>"))
+                                .addOption("GTA RP","gta",Emoji.fromFormatted("<:gtav_icon:1475035570420846692>"))
+                                .setPlaceholder("Select your games")
+                                .setMaxValues(5)
+                                .setUniqueId(3)
+                                .build()),
+
+
+                Separator.createDivider(Separator.Spacing.LARGE),
+                Section.of(
                         Thumbnail.fromUrl("https://cdn3.emoji.gg/emojis/480166-coffee.png"),
                         TextDisplay.of("## Cafè Menu"),
                         TextDisplay.of("Choose your color role to customize your name color. This personalizes your appearance in the server. You can update it anytime.")
                 ),
+
                 Separator.createInvisible(Separator.Spacing.LARGE),
                 ActionRow.of(StringSelectMenu.create("color")
                                 .addOption("Espresso","esp",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
@@ -85,7 +111,6 @@ public class RoleSelectionCommand implements ICommand{
                         .addOption("Milk Tea","mt",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
                                 .addOption("Peach Iced Tea","peach",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
                                 .addOption("Hazelnut Latte","hazel",Emoji.fromFormatted("<:coffee:1474659875341598772>"))
-                                .setMaxValues(5)
                                 .setPlaceholder("Select a role")
                         .build()
 
