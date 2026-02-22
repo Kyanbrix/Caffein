@@ -1,6 +1,7 @@
 package com.github.kyanbrix.component.command;
 
 import com.github.kyanbrix.Caffein;
+import com.github.kyanbrix.utils.Constant;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
@@ -18,6 +19,8 @@ public class CommandManager extends ListenerAdapter {
     public CommandManager() {
         this.addCommands(new MessageCommandMaker());
         this.addCommands(new RoleSelectionCommand());
+        this.addCommands(new GetUserAvatar());
+        this.addCommands(new GetUserBanner());
     }
 
 
@@ -29,31 +32,40 @@ public class CommandManager extends ListenerAdapter {
         if (!event.isFromGuild() || event.getAuthor().isBot()) return;
 
         final String command = event.getMessage().getContentRaw().toLowerCase().trim();
-        final String PREFIX = "!!";
+        final String PREFIX = Constant.PREFIX;
+
+
 
         if (command.startsWith(PREFIX)) {
 
             commands.forEach((s, iCommand) -> {
 
-                if (command.startsWith(PREFIX) && command.startsWith(s,PREFIX.length())) {
+                final String[] offset = command.split(" ");
+                final String cmd = offset[0].substring(PREFIX.length());
 
-                    try {
-                        iCommand.accept(event);
+                if (s.equalsIgnoreCase(cmd)) {
 
-                    }catch (Exception e) {
-                        System.out.println(e.fillInStackTrace().toString());
+                    iCommand.accept(event);
+
+                }else {
+                    for (String alias : iCommand.aliases()) {
+
+                        if (alias.equalsIgnoreCase(cmd)) {
+
+                            iCommand.accept(event);
+
+                            return;
+                        }
+
                     }
 
+
                 }
-
-
-
 
 
             });
 
         }
-
 
     }
 
