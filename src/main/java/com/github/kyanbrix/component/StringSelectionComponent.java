@@ -21,7 +21,7 @@ public class StringSelectionComponent extends ListenerAdapter {
 
 
         switch (uniqueId) {
-            case 2 -> handleDrinkSelection(event);
+            case 3, 2 -> handleSelection(event);
             case 1 -> {
 
                 MessageComponentTree componentTree = event.getMessage().getComponentTree();
@@ -52,7 +52,7 @@ public class StringSelectionComponent extends ListenerAdapter {
 
     }
 
-    private void handleDrinkSelection(StringSelectInteractionEvent event) {
+    private void handleSelection(StringSelectInteractionEvent event) {
         Guild guild = event.getGuild();
         Member member = event.getMember();
         List<String> values = event.getValues();
@@ -76,6 +76,15 @@ public class StringSelectionComponent extends ListenerAdapter {
                 case "mt" -> toggleRole(member,guild,memberRoleIds,1474705171610075219L);
                 case "peach" -> toggleRole(member,guild,memberRoleIds,1474705209719787581L);
                 case "hazel" -> toggleRole(member,guild,memberRoleIds,1474705232884928582L);
+                case "roblox" -> toggleRole(member,guild,memberRoleIds,1475031329270792343L);
+                case "ml" -> toggleRole(member,guild,memberRoleIds,1475031360480477235L);
+                case "dota2" -> toggleRole(member,guild,memberRoleIds,1475031397403070506L);
+                case "minecraft" -> toggleRole(member,guild,memberRoleIds,1475031487215571107L);
+                case "val" -> toggleRole(member,guild,memberRoleIds,1475031529611591761L);
+                case "gta" -> toggleRole(member,guild,memberRoleIds,1475031629956386906L);
+                case "cs2" -> toggleRole(member,guild,memberRoleIds,1475031422162042962L);
+                case "lol" -> toggleRole(member,guild,memberRoleIds,1475031451740409856L);
+
             }
         }
 
@@ -101,4 +110,6 @@ public class StringSelectionComponent extends ListenerAdapter {
             System.out.println("Role ID " + roleIdLong + " is not in the server");
         }
     }
+
+
 }
