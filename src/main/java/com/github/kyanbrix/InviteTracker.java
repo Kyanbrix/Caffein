@@ -50,7 +50,7 @@ public class InviteTracker extends ListenerAdapter {
 
                     MessageEmbed embed = new EmbedBuilder()
                             .setAuthor("Invite Logger",null,guild.getIconUrl())
-                            .setDescription(String.format("User %s used invite url %s, created by %s to join",member.getAsMention(),invite.getUrl(),invite.getInviter().getName()))
+                            .setDescription(String.format("User %s used invite url %s, created by `` %s ``",member.getAsMention(),invite.getUrl(),invite.getInviter().getName()))
                             .setColor(Color.decode("#FFEBCD"))
                             .setTimestamp(Instant.now().atZone(ZoneId.of("Asia/Manila")))
                             .build();
