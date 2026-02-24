@@ -74,7 +74,7 @@ public class GuildMessagesHandler extends ListenerAdapter {
 
         List<Role> memberRoles = member.getRoles();
 
-        Role role = guild.getRoleById(1473561476450226309L);
+        Role role = guild.getRoleById(1475742792092487851L);
 
         try (Connection connection = Caffein.getInstance().getConnection()){
 

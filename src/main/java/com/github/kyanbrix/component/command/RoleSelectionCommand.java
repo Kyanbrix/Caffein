@@ -80,7 +80,8 @@ public class RoleSelectionCommand implements ICommand{
                                 .addOption("Counter-Strike 2","cs2",Emoji.fromFormatted("<:emojigg_CS2:1475035360810635345>"))
                                 .addOption("Minecraft","minecraft",Emoji.fromFormatted("<:minecraft:1475035431643906118>"))
                                 .addOption("Valorant","val",Emoji.fromFormatted("<:Valorant:1475035499398824050>"))
-                                .addOption("GTA RP","gta",Emoji.fromFormatted("<:gtav_icon:1475035570420846692>"))
+                                .addOption("GTA 5","gta",Emoji.fromFormatted("<:gtav_icon:1475035570420846692>"))
+                                .addOption("Call of Duty Mobile","cod")
                                 .setPlaceholder("Select your games")
                                 .setMaxValues(5)
                                 .setUniqueId(3)
@@ -114,11 +115,12 @@ public class RoleSelectionCommand implements ICommand{
                                 .setPlaceholder("Select a role")
                         .build()
 
-                        .withUniqueId(2))
+                        .withUniqueId(2)),
+
+                Separator.createDivider(Separator.Spacing.LARGE)
+
 
         );
-
-
 
 
 
