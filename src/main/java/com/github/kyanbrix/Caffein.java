@@ -158,7 +158,7 @@ public class Caffein {
 
                     System.out.println("Hours: "+duration.toHours() +": "+duration.toDays());
 
-                    if (duration.toDays() <= 0) {
+                    if (duration.toDays() >= 3) {
 
                         Guild guild = getJda().getGuildById(1469324454470353163L);
 
