@@ -13,5 +13,7 @@ COPY --from=build /app/target/cafe.jar /app/cafe.jar
 
 # Railway should provide this in environment variables.
 ENV DISCORD_TOKEN=""
+ENV DB_PASSWORD=""
+ENV DB_URL=""
 
 CMD ["java", "-jar", "/app/cafe.jar"]
