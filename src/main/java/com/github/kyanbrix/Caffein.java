@@ -101,6 +101,13 @@ public class Caffein {
 
         service.scheduleAtFixedRate(this::checking,0, 1,TimeUnit.MINUTES);
 
+
+        Flyway flyway = Flyway.configure()
+                .dataSource(connectionPool.getDataSource())
+                .load();
+
+        flyway.migrate();
+
     }
 
     private String getToken() throws IOException {
