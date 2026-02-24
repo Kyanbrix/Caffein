@@ -153,12 +153,12 @@ public class Caffein {
 
                     if (duration.toDays() <= 0) {
 
-                        Guild guild = getJda().getGuildById(1357336100514828411L);
+                        Guild guild = getJda().getGuildById(1469324454470353163L);
 
                         if (guild != null) {
                             guild.retrieveMemberById(userid).queue(member -> {
 
-                                Role role = guild.getRoleById(1473561476450226309L);
+                                Role role = guild.getRoleById(1475742792092487851L);
 
                                 List<Role> memberRoles = member.getRoles();
                                 if (role != null) {
