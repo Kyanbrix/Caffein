@@ -94,7 +94,7 @@ public class Caffein {
                         GatewayIntent.GUILD_INVITES
                 )
                 .disableCache(EnumSet.allOf(CacheFlag.class))
-                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new MemberJoined(), new InviteTracker(), new GuildMessagesHandler(), new NonBooster())
+                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new MemberJoined(), new InviteTracker(), new GuildMessagesHandler())
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
 
