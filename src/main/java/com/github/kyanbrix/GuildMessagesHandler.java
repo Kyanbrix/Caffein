@@ -2,10 +2,7 @@ package com.github.kyanbrix;
 
 import com.github.kyanbrix.database.SQLBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.UserSnowflake;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +27,9 @@ public class GuildMessagesHandler extends ListenerAdapter {
 
         final long userId = event.getAuthor().getIdLong();
 
+
         Guild guild = event.getGuild();
+
 
         insertData(userId);
 
@@ -89,7 +88,7 @@ public class GuildMessagesHandler extends ListenerAdapter {
                     if (set.next()) {
                         int total_message = set.getInt("total_messages");
 
-                        if (total_message >= 200) {
+                        if (total_message >= 120) {
 
                             if (role !=null && !memberRoles.contains(role)) guild.addRoleToMember(member,role).queue();
 
