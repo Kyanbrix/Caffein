@@ -10,7 +10,6 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,13 +75,6 @@ public class Caffein {
 
     public void start() throws IOException, InterruptedException {
         this.connectionPool = new ConnectionPool();
-
-        Flyway flyway = Flyway.configure()
-                .dataSource(connectionPool.getDataSource())
-                .load();
-
-        flyway.migrate();
-
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             service.shutdown();
