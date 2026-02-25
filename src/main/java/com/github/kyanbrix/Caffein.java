@@ -7,7 +7,6 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.slf4j.Logger;
@@ -18,11 +17,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -150,141 +147,110 @@ public class Caffein {
 
 
     public void checkUserMessages() {
+        String selectSql = "SELECT userid, last_message FROM user_messages WHERE total_messages < ?";
+        String deleteSql = "DELETE FROM user_messages WHERE userid = ?";
 
+        try (Connection connection = getConnection();
+             PreparedStatement selectPs = connection.prepareStatement(selectSql);
+             PreparedStatement deletePs = connection.prepareStatement(deleteSql)) {
 
-        try (Connection connection = getConnection()) {
+            selectPs.setInt(1, 120);
 
-            String query = "SELECT * FROM user_messages WHERE total_messages < 120";
-
-            PreparedStatement ps = connection.prepareStatement(query);
-            try (ResultSet set = ps.executeQuery()) {
+            try (ResultSet set = selectPs.executeQuery()) {
+                LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Manila"));
 
                 while (set.next()) {
-
                     long userId = set.getLong("userid");
                     Timestamp timestamp = set.getTimestamp("last_message");
 
-                    Duration duration = Duration.between(timestamp.toLocalDateTime(),LocalDateTime.now(ZoneId.of("Asia/Manila")));
+                    Duration duration = Duration.between(timestamp.toLocalDateTime(), now);
 
                     if (duration.toDays() >= 2) {
+                        deletePs.setLong(1, userId);
+                        int affectedRows = deletePs.executeUpdate();
 
-                        try (PreparedStatement delete = connection.prepareStatement("DELETE FROM user_messages WHERE userid = ?")) {
-                            delete.setObject(1,userId);
-                            delete.executeUpdate();
-
-                            log.info("User ID {} has deleted due to inactivity",userId);
-
+                        if (affectedRows > 0) {
+                            log.info("User ID {} deleted due to inactivity", userId);
                         }
                     }
-
-
                 }
-
-
             }
-
-
-
         } catch (SQLException e) {
-            log.error(e.getMessage(),e.fillInStackTrace());
+            log.error("Failed to check and clean up user_messages", e);
         }
-
-
     }
 
 
 
     private void checking() {
+        String selectSql = "SELECT user_id, last_message FROM regulars";
+        String deleteRegularSql = "DELETE FROM regulars WHERE user_id = ?";
+        String deleteMessagesSql = "DELETE FROM user_messages WHERE userid = ?";
 
-        try (Connection connection = getConnection()) {
+        try (Connection connection = getConnection();
+             PreparedStatement query = connection.prepareStatement(selectSql);
+             ResultSet set = query.executeQuery()) {
 
-            String sql = "SELECT * FROM regulars";
-            PreparedStatement query = connection.prepareStatement(sql);
+            LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Manila"));
 
-            try (ResultSet set = query.executeQuery()) {
+            while (set.next()) {
+                long userId = set.getLong("user_id");
+                Timestamp timestamp = set.getTimestamp("last_message");
 
-                while (set.next()) {
-
-                    long userid = set.getLong("user_id");
-                    Timestamp timestamp = set.getTimestamp("last_message");
-
-                    Duration duration = Duration.between(timestamp.toLocalDateTime(), LocalDateTime.now(ZoneId.of("Asia/Manila")));
-
-
-                    System.out.println("Hours: "+duration.toHours() +": "+duration.toDays());
-
-                    if (duration.toDays() >= 7) {
-
-                        Guild guild = getJda().getGuildById(1469324454470353163L);
-
-                        if (guild != null) {
-                            guild.retrieveMemberById(userid).queue(member -> {
-
-                                Role role = guild.getRoleById(1475742792092487851L);
-
-                                List<Role> memberRoles = member.getRoles();
-                                if (role != null) {
-
-                                    if (memberRoles.contains(role)) {
-                                        guild.removeRoleFromMember(member,role).queue();
-
-                                        String deleteQuery = "DELETE FROM regulars WHERE user_id = ?";
-
-                                        try (Connection connection1 = getConnection()) {
-                                            try (PreparedStatement statement = connection1.prepareStatement(deleteQuery)){
-                                                statement.setObject(1,member.getIdLong());
-
-                                                statement.executeUpdate();
-
-                                                System.out.println("Deleted a user on regular Table");
-
-                                                String delete = "DELETE FROM user_messages WHERE userid = ?";
-                                                try (PreparedStatement deleteData = connection1.prepareStatement(delete)){
-
-                                                    deleteData.setObject(1,member.getIdLong());
-
-                                                    deleteData.executeUpdate();
-
-                                                    System.out.println("DELETED a user from user_messages table");
-
-                                                }
-
-
-                                            }
-                                        }catch (SQLException e) {
-                                            log.error("Error in connection1 --- {}",e.getMessage());
-                                        }
-
-                                    } else log.error("NO role or somethin'");
-
-
-
-
-                                }else log.error("Role regular is null");
-
-                            });
-
-                        }
-
-
-                    }
-
-
-
-
-
+                if (timestamp == null) {
+                    log.warn("Skipping user_id {} because last_message is null", userId);
+                    continue;
                 }
 
+                Duration duration = Duration.between(timestamp.toLocalDateTime(), now);
+                log.debug("Inactivity for user_id {}: {} hours ({} days)", userId, duration.toHours(), duration.toDays());
 
+
+                if (duration.toDays() < 7) continue;
+
+                Guild guild = getJda().getGuildById(1469324454470353163L);
+                if (guild == null) {
+                    log.warn("Guild not found while checking inactive regulars");
+                    continue;
+                }
+
+                guild.retrieveMemberById(userId).queue(member -> {
+                    Role role = guild.getRoleById(1475742792092487851L);
+                    if (role == null) {
+                        log.warn("Regular role not found in guild {}", guild.getId());
+                        return;
+                    }
+
+                    if (!member.getRoles().contains(role)) {
+                        log.debug("User {} does not have regular role; skipping role removal", member.getIdLong());
+                        return;
+                    }
+
+                    guild.removeRoleFromMember(member, role).queue(
+                            success -> {
+                                try (Connection connection1 = getConnection();
+                                     PreparedStatement deleteRegular = connection1.prepareStatement(deleteRegularSql);
+                                     PreparedStatement deleteMessages = connection1.prepareStatement(deleteMessagesSql)) {
+
+                                    long memberId = member.getIdLong();
+
+                                    deleteRegular.setLong(1, memberId);
+                                    deleteRegular.executeUpdate();
+
+                                    deleteMessages.setLong(1, memberId);
+                                    deleteMessages.executeUpdate();
+
+                                    log.info("Removed inactive regular user {} from regulars and user_messages", memberId);
+                                } catch (SQLException e) {
+                                    log.error("Failed to clean up database rows for user {}", member.getIdLong(), e);
+                                }
+                            },
+                            error -> log.error("Failed to remove regular role from user {}", member.getIdLong(), error)
+                    );
+                }, error -> log.warn("Failed to retrieve member {}: {}", userId, error.getMessage()));
             }
-
-
-
-        }catch (SQLException e) {
-            log.error(e.getMessage());
-            e.fillInStackTrace();
+        } catch (SQLException e) {
+            log.error("Failed to check regulars table", e);
         }
-
-
     }
 }
