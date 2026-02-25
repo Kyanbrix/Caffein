@@ -77,13 +77,23 @@ public class Caffein {
     public void start() throws IOException, InterruptedException {
         this.connectionPool = new ConnectionPool();
 
+        Flyway flyway = Flyway.configure()
+                .dataSource(connectionPool.getDataSource())
+                .load();
+
+        flyway.migrate();
+
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            service.shutdown();
+
             if (connectionPool != null) {
                 connectionPool.close();
             }
 
-            jda.shutdown();
+            if (jda != null) {
+                jda.shutdown();
+            }
         }, "db-pool-shutdown"));
 
         jda = JDABuilder.createLight(
@@ -99,14 +109,21 @@ public class Caffein {
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
 
-        service.scheduleAtFixedRate(this::checking,0, 1,TimeUnit.MINUTES);
+        service.scheduleAtFixedRate(() -> {
+            try {
+                checking();
+            } catch (Throwable t) {
+                log.error("Unhandled error in checking()", t);
+            }
+        },0, 1,TimeUnit.HOURS);
 
-
-        Flyway flyway = Flyway.configure()
-                .dataSource(connectionPool.getDataSource())
-                .load();
-
-        flyway.migrate();
+        service.scheduleAtFixedRate(() -> {
+            try {
+                checkUserMessages();
+            } catch (Throwable t) {
+                log.error("Unhandled error in checkUserMessages()", t);
+            }
+        },10,30,TimeUnit.MINUTES);
 
     }
 
@@ -139,6 +156,52 @@ public class Caffein {
     }
 
 
+
+    public void checkUserMessages() {
+
+
+        try (Connection connection = getConnection()) {
+
+            String query = "SELECT * FROM user_messages WHERE total_messages < 120";
+
+            PreparedStatement ps = connection.prepareStatement(query);
+            try (ResultSet set = ps.executeQuery()) {
+
+                while (set.next()) {
+
+                    long userId = set.getLong("userid");
+                    Timestamp timestamp = set.getTimestamp("last_message");
+
+                    Duration duration = Duration.between(timestamp.toLocalDateTime(),LocalDateTime.now(ZoneId.of("Asia/Manila")));
+
+                    if (duration.toDays() >= 2) {
+
+                        try (PreparedStatement delete = connection.prepareStatement("DELETE FROM user_messages WHERE userid = ?")) {
+                            delete.setObject(1,userId);
+                            delete.executeUpdate();
+
+                            log.info("User ID {} has deleted due to inactivity",userId);
+
+                        }
+                    }
+
+
+                }
+
+
+            }
+
+
+
+        } catch (SQLException e) {
+            log.error(e.getMessage(),e.fillInStackTrace());
+        }
+
+
+    }
+
+
+
     private void checking() {
 
         try (Connection connection = getConnection()) {
@@ -158,7 +221,7 @@ public class Caffein {
 
                     System.out.println("Hours: "+duration.toHours() +": "+duration.toDays());
 
-                    if (duration.toDays() >= 2) {
+                    if (duration.toDays() >= 7) {
 
                         Guild guild = getJda().getGuildById(1469324454470353163L);
 
