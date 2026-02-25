@@ -25,11 +25,11 @@ public class GuildMessagesHandler extends ListenerAdapter {
         //Only for non-admins
         if (!event.isFromGuild() || event.getAuthor().isBot() || event.getMember().hasPermission(Permission.ADMINISTRATOR)) return;
 
-        final long userId = event.getAuthor().getIdLong();
-
+        if (event.getChannel().getIdLong() == 1469373119830556803L ) return;
 
         Guild guild = event.getGuild();
 
+        final long userId = event.getAuthor().getIdLong();
 
         insertData(userId);
 
