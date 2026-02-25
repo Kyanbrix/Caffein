@@ -158,7 +158,7 @@ public class Caffein {
 
                     System.out.println("Hours: "+duration.toHours() +": "+duration.toDays());
 
-                    if (duration.toDays() >= 3) {
+                    if (duration.toDays() >= 2) {
 
                         Guild guild = getJda().getGuildById(1469324454470353163L);
 
@@ -175,7 +175,7 @@ public class Caffein {
 
                                         String deleteQuery = "DELETE FROM regulars WHERE user_id = ?";
 
-                                        try (Connection connection1 = getConnection()){
+                                        try (Connection connection1 = getConnection()) {
                                             try (PreparedStatement statement = connection1.prepareStatement(deleteQuery)){
                                                 statement.setObject(1,member.getIdLong());
 
@@ -212,7 +212,7 @@ public class Caffein {
                         }
 
 
-                    }else log.info("STILL ACTIVE");
+                    }
 
 
 
