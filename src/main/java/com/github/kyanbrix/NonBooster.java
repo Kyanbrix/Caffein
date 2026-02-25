@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class NonBooster extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-        if (event.getAuthor().isBot() || !event.isFromGuild() || event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
+        if (event.getAuthor().isBot() || !event.isFromGuild() || event.getMember().hasPermission(Permission.ADMINISTRATOR) || event.getMember().hasPermission(Permission.MANAGE_SERVER)) {
             return;
         }
 
@@ -40,6 +40,9 @@ public class NonBooster extends ListenerAdapter {
             guild.retrieveEmojis().queue(richCustomEmojis -> {
                 richCustomEmojis.forEach(richCustomEmoji -> {
                     if (!message.getMentions().getCustomEmojis().contains(richCustomEmoji)) {
+
+                        message.delete().queue();
+
                         MessageEmbed embed = new EmbedBuilder()
                                 .setAuthor(member.getEffectiveName(), null, member.getAvatarUrl())
                                 .setDescription("You cannot send an emoji outside from the server, you can only use **" + guild.getName() + "** emojis.\n\nYou can bypass this by **Boosting the Server!**")
