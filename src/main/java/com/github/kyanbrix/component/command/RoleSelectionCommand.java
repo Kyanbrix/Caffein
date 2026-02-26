@@ -15,7 +15,7 @@ import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.w3c.dom.Text;
 
-public class RoleSelectionCommand implements ICommand{
+public class RoleSelectionCommand implements ICommand {
     @Override
     public void accept(MessageReceivedEvent event) {
 
@@ -114,18 +114,7 @@ public class RoleSelectionCommand implements ICommand{
                                 .setPlaceholder("Select a role")
                         .build()
 
-                        .withUniqueId(2)),
-
-                Separator.createDivider(Separator.Spacing.LARGE),
-
-
-
-                TextDisplay.of("## Server Feedback"),
-                TextDisplay.of("Got ideas or suggestions to make the server even better? Drop your feedback here and let us know what you’d love to see added or improved. We’re always listening and appreciate your thoughts to help grow the community."),
-                Separator.createInvisible(Separator.Spacing.SMALL),
-                ActionRow.of(Button.of(ButtonStyle.PRIMARY,"feedback","Send your Feedback",Emoji.fromFormatted("<a:Notebook:1476552729374494791>")))
-
-
+                        .withUniqueId(2))
 
         );
 
