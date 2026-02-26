@@ -1,6 +1,6 @@
-package com.github.kyanbrix;
+package com.github.kyanbrix.features;
 
-import com.github.kyanbrix.database.SQLBuilder;
+import com.github.kyanbrix.Caffein;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -10,8 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;

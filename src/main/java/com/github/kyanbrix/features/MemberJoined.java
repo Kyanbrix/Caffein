@@ -1,4 +1,4 @@
-package com.github.kyanbrix;
+package com.github.kyanbrix.features;
 
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.WebhookClientBuilder;
@@ -25,8 +25,6 @@ public class MemberJoined extends ListenerAdapter {
 
         Member member = event.getMember();
         Guild guild = event.getGuild();
-
-
 
 
 
@@ -60,7 +58,7 @@ public class MemberJoined extends ListenerAdapter {
                 .build();
 
 
-        webhookClient.send(webhookMessage).thenAccept(msg-> System.out.println("Webhook message sent to discord "));
+        webhookClient.send(webhookMessage).thenAccept(msg-> System.out.println("New member joined"));
 
     }
 }

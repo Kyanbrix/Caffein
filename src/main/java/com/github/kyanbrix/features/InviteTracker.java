@@ -1,4 +1,4 @@
-package com.github.kyanbrix;
+package com.github.kyanbrix.features;
 
 import com.github.kyanbrix.utils.invite.InviteData;
 import net.dv8tion.jda.api.EmbedBuilder;
