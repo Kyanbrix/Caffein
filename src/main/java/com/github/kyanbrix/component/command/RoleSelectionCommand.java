@@ -81,7 +81,6 @@ public class RoleSelectionCommand implements ICommand{
                                 .addOption("Minecraft","minecraft",Emoji.fromFormatted("<:minecraft:1475035431643906118>"))
                                 .addOption("Valorant","val",Emoji.fromFormatted("<:Valorant:1475035499398824050>"))
                                 .addOption("GTA 5","gta",Emoji.fromFormatted("<:gtav_icon:1475035570420846692>"))
-                                .addOption("Call of Duty Mobile","cod")
                                 .setPlaceholder("Select your games")
                                 .setMaxValues(5)
                                 .setUniqueId(3)
@@ -90,7 +89,7 @@ public class RoleSelectionCommand implements ICommand{
 
                 Separator.createDivider(Separator.Spacing.LARGE),
                 Section.of(
-                        Thumbnail.fromUrl("https://cdn3.emoji.gg/emojis/480166-coffee.png"),
+                        Thumbnail.fromUrl("https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNGs3Z2Rkc2VrNjc5MDlyMHhiMG5qcTd5bjI5Mm5tdDVuNXAwM3RsYiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/nuotlxgu78Ddzaq0HR/giphy.gif"),
                         TextDisplay.of("## Cafè Menu"),
                         TextDisplay.of("Choose your color role to customize your name color. This personalizes your appearance in the server. You can update it anytime.")
                 ),
@@ -117,14 +116,32 @@ public class RoleSelectionCommand implements ICommand{
 
                         .withUniqueId(2)),
 
-                Separator.createDivider(Separator.Spacing.LARGE)
+                Separator.createDivider(Separator.Spacing.LARGE),
 
+
+
+                TextDisplay.of("## Server Feedback"),
+                TextDisplay.of("Got ideas or suggestions to make the server even better? Drop your feedback here and let us know what you’d love to see added or improved. We’re always listening and appreciate your thoughts to help grow the community."),
+                Separator.createInvisible(Separator.Spacing.SMALL),
+                ActionRow.of(Button.of(ButtonStyle.PRIMARY,"feedback","Send your Feedback",Emoji.fromFormatted("<a:Notebook:1476552729374494791>")))
+
+
+
+        );
+
+        Container container1 = Container.of(
+
+                Section.of(
+                        Thumbnail.fromUrl("https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExZGJoODB6cXg2eGN1ZXQzZGF0YmVnZm40ZWp4OGF1bnVneXp5a2d5MSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Duzbk7OJGmNwwvB4i0/giphy.gif"),
+                        TextDisplay.of("## Feedback"),
+                        TextDisplay.of("Got ideas or suggestions to make the server even better? Drop your feedback here and let us know what you’d love to see added or improved. We’re always listening and appreciate your thoughts to help grow the community.")
+                )
 
         );
 
 
 
-        event.getChannel().sendMessageComponents(container).useComponentsV2().queue();
+        event.getChannel().sendMessageComponents(container).useComponentsV2().flatMap(message -> message.getChannel().sendMessageComponents(container1).useComponentsV2()).queue();
 
 
 
