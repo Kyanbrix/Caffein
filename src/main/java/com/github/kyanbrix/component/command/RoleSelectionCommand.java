@@ -124,6 +124,10 @@ public class RoleSelectionCommand implements ICommand {
                         Thumbnail.fromUrl("https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExZGJoODB6cXg2eGN1ZXQzZGF0YmVnZm40ZWp4OGF1bnVneXp5a2d5MSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Duzbk7OJGmNwwvB4i0/giphy.gif"),
                         TextDisplay.of("## Feedback"),
                         TextDisplay.of("Got ideas or suggestions to make the server even better? Drop your feedback here and let us know what you’d love to see added or improved. We’re always listening and appreciate your thoughts to help grow the community.")
+                ),
+                Separator.createInvisible(Separator.Spacing.SMALL),
+                ActionRow.of(
+                        Button.of(ButtonStyle.PRIMARY,"feedback","Create Feedback",Emoji.fromFormatted("<a:Notebook:1476552729374494791>"))
                 )
 
         );
