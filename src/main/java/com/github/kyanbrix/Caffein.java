@@ -1,8 +1,12 @@
 package com.github.kyanbrix;
 
+import com.github.kyanbrix.component.ModalComponent;
 import com.github.kyanbrix.component.StringSelectionComponent;
 import com.github.kyanbrix.component.command.CommandManager;
 import com.github.kyanbrix.database.ConnectionPool;
+import com.github.kyanbrix.features.GuildMessagesHandler;
+import com.github.kyanbrix.features.InviteTracker;
+import com.github.kyanbrix.features.MemberJoined;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -94,7 +98,7 @@ public class Caffein {
                         GatewayIntent.GUILD_INVITES
                 )
                 .disableCache(EnumSet.allOf(CacheFlag.class))
-                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new MemberJoined(), new InviteTracker(), new GuildMessagesHandler())
+                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new MemberJoined(), new InviteTracker(), new GuildMessagesHandler(), new ModalComponent())
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
 
@@ -165,7 +169,7 @@ public class Caffein {
 
                     Duration duration = Duration.between(timestamp.toLocalDateTime(), now);
 
-                    if (duration.toDays() >= 2) {
+                    if (duration.toDays() >= 1) {
                         deletePs.setLong(1, userId);
                         int affectedRows = deletePs.executeUpdate();
 
@@ -206,7 +210,7 @@ public class Caffein {
                 log.debug("Inactivity for user_id {}: {} hours ({} days)", userId, duration.toHours(), duration.toDays());
 
 
-                if (duration.toDays() < 7) continue;
+                if (duration.toDays() < 3) continue;
 
                 Guild guild = getJda().getGuildById(1469324454470353163L);
                 if (guild == null) {
