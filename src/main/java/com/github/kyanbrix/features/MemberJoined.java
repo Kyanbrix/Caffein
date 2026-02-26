@@ -26,7 +26,7 @@ public class MemberJoined extends ListenerAdapter {
         Member member = event.getMember();
         Guild guild = event.getGuild();
 
-
+        if (guild.getIdLong() == 1357336100514828411L) return;
 
 
         WebhookClientBuilder webhookClientBuilder = new WebhookClientBuilder("https://discord.com/api/webhooks/1472353251578876197/CUL1FXmhAPL1XrPKqE8ghULfmd1jJT1KgZprgEUjUbRyrL3AQT0CsniAG_VaY3UfQ8fQ");
