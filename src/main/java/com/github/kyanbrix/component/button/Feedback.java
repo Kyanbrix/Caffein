@@ -25,7 +25,7 @@ public class Feedback implements IButton{
 
 
         Modal modal =  Modal.create("feedbackModal","Your Feedback")
-                .addComponents(Label.of("",
+                .addComponents(Label.of("Feedback",
                         TextInput.create("feed",TextInputStyle.PARAGRAPH).setRequired(true)
                                 .build()
                         ),
