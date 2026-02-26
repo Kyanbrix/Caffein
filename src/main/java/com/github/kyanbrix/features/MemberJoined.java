@@ -6,15 +6,24 @@ import club.minnced.discord.webhook.send.WebhookEmbed;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
+import com.github.kyanbrix.Caffein;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class MemberJoined extends ListenerAdapter {
 
 
+    private static final Logger log = LoggerFactory.getLogger(MemberJoined.class);
 
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
@@ -59,6 +68,39 @@ public class MemberJoined extends ListenerAdapter {
 
 
         webhookClient.send(webhookMessage).thenAccept(msg-> System.out.println("New member joined"));
+
+    }
+
+
+    @Override
+    public void onGuildMemberRemove(@NotNull GuildMemberRemoveEvent event) {
+
+        if (event.getUser().isBot()) return;
+
+        long memberIdLong = event.getUser().getIdLong();
+
+        try (Connection connection = Caffein.getInstance().getConnection()) {
+
+            String deleteUserMessages = "DELETE FROM user_messages WHERE userid = ?";
+            String deleteFromRegular = "DELETE FROM regulars WHERE user_id = ?";
+
+            try (PreparedStatement ps = connection.prepareStatement(deleteUserMessages)) {
+
+                ps.setObject(1,memberIdLong);
+                ps.executeUpdate();
+
+                try (PreparedStatement ps1 = connection.prepareStatement(deleteFromRegular)) {
+
+                    ps1.setObject(1,memberIdLong);
+                    ps1.executeUpdate();
+                }
+
+            }
+
+        }catch (SQLException e) {
+            log.error(e.getMessage(),e.fillInStackTrace());
+        }
+
 
     }
 }
