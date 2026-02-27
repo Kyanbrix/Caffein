@@ -16,7 +16,6 @@ public class StringSelectionComponent extends ListenerAdapter {
 
     @Override
     public void onStringSelectInteraction(@NotNull StringSelectInteractionEvent event) {
-        final String componentId = event.getComponentId();
         final int uniqueId = event.getUniqueId();
 
 

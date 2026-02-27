@@ -7,52 +7,37 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 
 import java.util.List;
 
-public class MaleButton implements IButton{
+public class MaleButton implements IButton {
+    private static final long MALE_ROLE_ID = 1474704365733548134L;
+
     @Override
     public void accept(ButtonInteractionEvent event) {
-
         Member member = event.getMember();
         Guild guild = event.getGuild();
 
-
-        if (member != null && guild != null) {
-            List<Role> roleList = member.getRoles();
-
-            Role role = guild.getRoleById(1474704365733548134L);
-
-            if (role != null) {
-
-                if (roleList.contains(role)) {
-
-                    removeRole(member,guild);
-
-                    sendReplyEphemeral(event,"I remove "+role.getAsMention()+" from your profile");
-
-
-                } else {
-                    guild.addRoleToMember(member,role).queue();
-                    sendReplyEphemeral(event,"I added "+role.getAsMention()+" into your profile");
-                }
-
-            }
-
+        if (member == null || guild == null) {
+            return;
         }
 
+        Role maleRole = guild.getRoleById(MALE_ROLE_ID);
+        if (maleRole == null) {
+            sendReplyEphemeral(event, "Cannot update your profile because the role is missing in this server.");
+            return;
+        }
+
+        List<Role> memberRoles = member.getRoles();
+        if (memberRoles.contains(maleRole)) {
+            removeRole(member, maleRole);
+            sendReplyEphemeral(event, "I removed " + maleRole.getAsMention() + " from your profile");
+            return;
+        }
+
+        guild.addRoleToMember(member, maleRole).queue();
+        sendReplyEphemeral(event, "I added " + maleRole.getAsMention() + " to your profile");
     }
 
-
-    private void removeRole(Member member, Guild guild) {
-
-        if (member != null && guild != null) {
-            Role role = guild.getRoleById(1474704365733548134L); // edit potang ina
-
-            if (role!=null) {
-                guild.removeRoleFromMember(member,role).queue();
-
-            }else System.out.println("Cannot remove a role because it is not present in the server!");
-
-
-        }
+    private void removeRole(Member member, Role role) {
+        member.getGuild().removeRoleFromMember(member, role).queue();
     }
 
     @Override
