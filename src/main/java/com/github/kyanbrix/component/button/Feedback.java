@@ -19,7 +19,7 @@ public class Feedback implements IButton{
     public void accept(ButtonInteractionEvent event) {
 
         if (event.getMember().hasPermission(Permission.ADMINISTRATOR)){
-            event.reply("https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZjJyYmRrbHM1NmFzN2V1ejJ2dGYzZ2xyMm5yZXhxN2psNm03b3RhZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/a4TIHaDMGADgTnEZqd/giphy.gif").setEphemeral(true).queue();
+            event.reply("Verified/Regular Members only").setEphemeral(true).queue();
             return;
         }
 
