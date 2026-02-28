@@ -37,29 +37,29 @@ public class MessageCommandMaker implements ICommand{
                 Separator.createInvisible(Separator.Spacing.LARGE),
 
                 TextDisplay.of("""
-                        ## 🌿 1. Be Kind & Respectful
+                        ### 🌿 1. Be Kind & Respectful
                         Treat everyone with respect. No harassment, hate speech, bullying, or discrimination of any kind.
                         
-                        ## :coffee: 2. Keep the Vibes Chill
+                        ### :coffee: 2. Keep the Vibes Chill
                         This is a relaxed space. Avoid unnecessary drama, arguments, or aggressive behavior.
                         
-                        ## 💬 3. Use the Right Channels
+                        ### 💬 3. Use the Right Channels
                         Please keep conversations in their appropriate channels so the café stays organized and cozy.
                         
-                        ## 🚫 4. No Spam or Self-Promo
+                        ### 🚫 4. No Spam or Self-Promo
                         No spamming, flooding chats, or advertising without permission from staff.
                         
-                        ## 🔞 5. Keep Content Appropriate
+                        ### 🔞 5. Keep Content Appropriate
                         No NSFW, explicit, or disturbing content. Keep things safe and comfortable for everyone.
                         
-                        ## 🛡️ 6. Respect the Staff
+                        ### 🛡️ 6. Respect the Staff
                         Mods and admins are here to help keep the café peaceful. Please follow their guidance
                         
                         """),
-                Separator.createInvisible(Separator.Spacing.SMALL),
+                Separator.createInvisible(Separator.Spacing.LARGE),
                 Section.of(
                         Button.link("https://discord.com/terms", "Discord TOS"),
-                        TextDisplay.of("## \uD83D\uDCDC 7. Follow Discord TOS"),
+                        TextDisplay.of("### \uD83D\uDCDC 7. Follow Discord TOS"),
                         TextDisplay.of("All Discord Terms of Service and Community Guidelines apply here.")
                 )
 
