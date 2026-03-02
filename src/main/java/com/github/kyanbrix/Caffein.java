@@ -7,12 +7,14 @@ import com.github.kyanbrix.database.ConnectionPool;
 import com.github.kyanbrix.features.InviteTracker;
 import com.github.kyanbrix.features.RantMessages;
 import com.github.kyanbrix.features.ServerMemberHandler;
+import com.github.kyanbrix.features.ServerVoiceLogs;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +26,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.EnumSet;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -96,11 +97,13 @@ public class Caffein {
                         GatewayIntent.GUILD_MESSAGES,
                         GatewayIntent.GUILD_PRESENCES,
                         GatewayIntent.GUILD_MEMBERS,
-                        GatewayIntent.GUILD_INVITES
+                        GatewayIntent.GUILD_INVITES,
+                        GatewayIntent.GUILD_VOICE_STATES
                 )
-                .disableCache(EnumSet.allOf(CacheFlag.class))
+                .enableCache(CacheFlag.VOICE_STATE)
                 .setMemberCachePolicy(member -> member.getGuild().getIdLong() == 1469324454470353163L)
-                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new ModalComponent(), new RantMessages())
+                .setChunkingFilter(ChunkingFilter.ALL)
+                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new ModalComponent(), new RantMessages(), new ServerVoiceLogs())
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
 
