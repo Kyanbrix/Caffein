@@ -74,21 +74,20 @@ public class ServerMemberHandler extends ListenerAdapter {
                 .setAuthor(author)
                 .setDescription(String.format("%s has joined the server",member.getAsMention()))
                 .setColor(15316501)
-                .setThumbnailUrl(member.getAvatarUrl())
+                .setThumbnailUrl(member.getUser().getAvatarUrl())
                 .build();
 
         WebhookMessage webhookMessage = new WebhookMessageBuilder()
                 .setUsername(guild.getName())
                 .setAvatarUrl(guild.getIconUrl())
                 .addEmbeds(webhookEmbed)
-                .setContent(member.getAsMention())
                 .build();
 
 
         webhookClient.send(webhookMessage).thenAccept(msg-> System.out.println("New member joined"));
 
 
-        String timestamp = TimeFormat.RELATIVE.format(member.getTimeJoined());
+        String timestamp = TimeFormat.RELATIVE.format(member.getUser().getTimeCreated());
 
         MessageEmbed embed = new EmbedBuilder()
                 .setAuthor("Member Joined",null,member.getAvatarUrl())
@@ -100,11 +99,6 @@ public class ServerMemberHandler extends ListenerAdapter {
 
         if (logChannel != null ) logChannel.sendMessageEmbeds(embed).queue();
         else log.error("Member joined log channel is null");
-
-
-
-
-
 
     }
 
@@ -178,28 +172,26 @@ public class ServerMemberHandler extends ListenerAdapter {
 
                 EmbedBuilder builder = new EmbedBuilder();
                 try {
-                    Role role = guild.getRoleById(1477945262206091284L);
+                    Role role = guild.getRoleById(1475742792092487851L);
 
                     if (primaryGuild == null) {
                         if (member.getRoles().contains(role)) {
                             guild.removeRoleFromMember(member,role).queue();
 
-                            builder.setAuthor(member.getEffectiveName(),null,member.getAvatarUrl());
+                            builder.setAuthor(member.getEffectiveName(),null,user.getAvatarUrl());
                             builder.setDescription(String.format("%s removed our server tag from their profile",member.getAsMention()));
                             builder.setColor(Color.decode("#FF4500"));
                             builder.setTimestamp(Instant.now());
-                            logChannel.sendMessageEmbeds(builder.build()).queue();
                         }
 
                     }else if (primaryGuild.getIdLong() == 1469324454470353163L) {
 
                         if (!member.getRoles().contains(role)) {
                             guild.addRoleToMember(member,role).queue();
-                            builder.setAuthor(member.getEffectiveName(),null,member.getAvatarUrl());
+                            builder.setAuthor(member.getEffectiveName(),null,user.getAvatarUrl());
                             builder.setDescription(String.format("%s used our server tag",member.getAsMention()));
                             builder.setColor(Color.decode("#90EE90"));
                             builder.setTimestamp(Instant.now());
-                            logChannel.sendMessageEmbeds(builder.build()).queue();
 
 
                         }
@@ -207,15 +199,15 @@ public class ServerMemberHandler extends ListenerAdapter {
                     } else if (primaryGuild.getIdLong() != 1469324454470353163L) {
                         if (!member.getRoles().contains(role)) {
                             guild.removeRoleFromMember(member,role).queue();
-                            builder.setAuthor(member.getEffectiveName(),null,member.getAvatarUrl());
+                            builder.setAuthor(member.getEffectiveName(),null,user.getAvatarUrl());
                             builder.setDescription(String.format("%s removed our server tag from their profile",member.getAsMention()));
                             builder.setColor(Color.decode("#FF4500"));
                             builder.setTimestamp(Instant.now());
-                            logChannel.sendMessageEmbeds(builder.build()).queue();
 
                         }
                     }
 
+                    logChannel.sendMessageEmbeds(builder.build()).queue();
                 }catch (Exception e) {
                     log.error(e.getMessage(),e.fillInStackTrace());
                 }
