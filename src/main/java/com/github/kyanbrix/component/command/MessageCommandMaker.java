@@ -1,5 +1,6 @@
 package com.github.kyanbrix.component.command;
 
+import com.github.kyanbrix.utils.Constant;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.container.Container;
 import net.dv8tion.jda.api.components.mediagallery.MediaGallery;
@@ -14,6 +15,8 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 public class MessageCommandMaker implements ICommand{
     @Override
     public void accept(MessageReceivedEvent event) {
+
+        if (event.getAuthor().getIdLong() != Constant.KIAN_ID) return;
 
         Guild guild = event.getGuild();
 
