@@ -33,7 +33,7 @@ public class InviteTracker extends ListenerAdapter {
         if (member.hasPermission(Permission.ADMINISTRATOR) || member.hasPermission(Permission.MANAGE_SERVER) || user.isBot()) return;
 
 
-        TextChannel logChannel = guild.getTextChannelById(1470162738910203994L);
+        TextChannel logChannel = guild.getTextChannelById(1477919584181813404L);
 
         guild.retrieveInvites().queue(invites -> {
 
@@ -50,8 +50,9 @@ public class InviteTracker extends ListenerAdapter {
 
                     MessageEmbed embed = new EmbedBuilder()
                             .setAuthor("Invite Logger",null,guild.getIconUrl())
-                            .setDescription(String.format("User %s used invite url %s, created by `` %s ``",member.getAsMention(),invite.getUrl(),invite.getInviter().getName()))
+                            .setDescription(String.format("User %s used invite url %s, created by %s",member.getAsMention(),invite.getUrl(),invite.getInviter().getAsMention()))
                             .setColor(Color.decode("#FFEBCD"))
+                            .setThumbnail(member.getAvatarUrl())
                             .setTimestamp(Instant.now().atZone(ZoneId.of("Asia/Manila")))
                             .build();
 
