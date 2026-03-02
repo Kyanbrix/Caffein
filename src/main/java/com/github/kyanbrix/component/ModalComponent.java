@@ -70,7 +70,7 @@ public class ModalComponent extends ListenerAdapter {
     private Section createHeaderSection(User user, String feedback) {
         return Section.of(
                 Thumbnail.fromUrl(user.getEffectiveAvatarUrl()),
-                TextDisplay.of("### " + user.getEffectiveName() + "'s Feedback"),
+                TextDisplay.of(String.format("%s (%s) Feedback",user.getAsMention(),user.getName())),
                 TextDisplay.of(feedback)
         );
     }
