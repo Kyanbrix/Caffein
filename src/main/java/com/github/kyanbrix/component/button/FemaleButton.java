@@ -4,10 +4,14 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class FemaleButton implements IButton{
+    private static final Logger log = LoggerFactory.getLogger(FemaleButton.class);
+
     @Override
     public String buttonId() {
         return "she";
@@ -19,41 +23,40 @@ public class FemaleButton implements IButton{
         Guild guild = event.getGuild();
 
 
-        if (member != null && guild != null) {
-            List<Role> roleList = member.getRoles();
+        if (member != null && guild != null) roleHandler(event,member,guild);
 
-            Role role = guild.getRoleById(1474704395370369206L);
-
-            if (role != null) {
-
-                if (roleList.contains(role)) {
-
-                    removeRole(member,guild);
-
-                    sendReplyEphemeral(event,"I remove "+role.getAsMention()+" from your profile");
+    }
 
 
-                } else {
-                    guild.addRoleToMember(member,role).queue();
-                    sendReplyEphemeral(event,"I added "+role.getAsMention()+" into your profile");
-                }
+    private void roleHandler(ButtonInteractionEvent event,Member member, Guild guild) {
+
+        List<Role> roleList = member.getRoles();
+
+        Role femaleRole = guild.getRoleById(1474704395370369206L);
+        Role maleRole = guild.getRoleById(1474704365733548134L);
+        Role gayRole = guild.getRoleById(1474704414513303552L);
+
+        if (femaleRole != null && maleRole != null && gayRole != null) {
+
+            if (roleList.contains(femaleRole)) {
+                guild.removeRoleFromMember(member,femaleRole).queue();
+                sendReplyEphemeral(event,String.format("I remove your %s role from your profile",femaleRole.getAsMention()));
+            } else if (roleList.contains(maleRole)) {
+                guild.removeRoleFromMember(member,maleRole).queue();
+                guild.addRoleToMember(member,femaleRole).queue();
+
+                sendReplyEphemeral(event,String.format("I added %s and remove %s from your profile",femaleRole.getAsMention(),maleRole.getAsMention()));
+
+            } else if (roleList.contains(gayRole)) {
+                guild.removeRoleFromMember(member,maleRole).queue();
+                guild.addRoleToMember(member,femaleRole).queue();
+
+                sendReplyEphemeral(event,String.format("I added %s and remove %s from your profile",femaleRole.getAsMention(),gayRole.getAsMention()));
 
             }
 
-        }
-    }
 
-    private void removeRole(Member member, Guild guild) {
+        }else log.error("Role handler error");
 
-        if (member != null && guild != null) {
-            Role role = guild.getRoleById(1474704395370369206L); // edit potang ina
-
-            if (role!=null) {
-                guild.removeRoleFromMember(member,role).queue();
-
-            }else System.out.println("Cannot remove a role because it is not present in the server!");
-
-
-        }
     }
 }
