@@ -188,7 +188,7 @@ public class ServerMemberHandler extends ListenerAdapter {
                             builder.setDescription(String.format("%s removed our server tag from their profile",member.getAsMention()));
                             builder.setColor(Color.decode("#FF4500"));
                             builder.setTimestamp(Instant.now());
-
+                            logChannel.sendMessageEmbeds(builder.build()).queue();
                         }
 
                     }else if (primaryGuild.getIdLong() == 1469324454470353163L) {
@@ -199,6 +199,9 @@ public class ServerMemberHandler extends ListenerAdapter {
                             builder.setDescription(String.format("%s used our server tag",member.getAsMention()));
                             builder.setColor(Color.decode("#90EE90"));
                             builder.setTimestamp(Instant.now());
+                            logChannel.sendMessageEmbeds(builder.build()).queue();
+
+
                         }
 
                     } else if (primaryGuild.getIdLong() != 1469324454470353163L) {
@@ -208,11 +211,10 @@ public class ServerMemberHandler extends ListenerAdapter {
                             builder.setDescription(String.format("%s removed our server tag from their profile",member.getAsMention()));
                             builder.setColor(Color.decode("#FF4500"));
                             builder.setTimestamp(Instant.now());
+                            logChannel.sendMessageEmbeds(builder.build()).queue();
+
                         }
                     }
-
-
-                    logChannel.sendMessageEmbeds(builder.build()).queue();
 
                 }catch (Exception e) {
                     log.error(e.getMessage(),e.fillInStackTrace());
