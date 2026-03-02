@@ -6,6 +6,7 @@ import com.github.kyanbrix.component.command.CommandManager;
 import com.github.kyanbrix.database.ConnectionPool;
 import com.github.kyanbrix.features.GuildMessagesHandler;
 import com.github.kyanbrix.features.InviteTracker;
+import com.github.kyanbrix.features.RantMessages;
 import com.github.kyanbrix.features.ServerMemberHandler;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -97,7 +98,7 @@ public class Caffein {
                 )
                 .disableCache(EnumSet.allOf(CacheFlag.class))
                 .setMemberCachePolicy(member -> member.getGuild().getIdLong() == 1469324454470353163L)
-                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new GuildMessagesHandler(), new ModalComponent())
+                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new ModalComponent(), new RantMessages())
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
 
