@@ -12,12 +12,8 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
-import net.dv8tion.jda.api.events.guild.member.GuildMemberUpdateEvent;
-import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateFlagsEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdatePrimaryGuildEvent;
-import net.dv8tion.jda.api.exceptions.ErrorHandler;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.utils.TimeFormat;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -27,13 +23,7 @@ import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.List;
-import java.util.Random;
 
 public class ServerMemberHandler extends ListenerAdapter {
 
@@ -94,7 +84,7 @@ public class ServerMemberHandler extends ListenerAdapter {
                 .addField("User",String.format("%s (%s)",member.getAsMention(),member.getIdLong()),false)
                 .addField("Account Created",timestamp,false)
                 .setColor(Color.ORANGE)
-                .setThumbnail(member.getAvatarUrl())
+                .setThumbnail(member.getUser().getAvatarUrl())
                 .build();
 
         if (logChannel != null ) logChannel.sendMessageEmbeds(embed).queue();
@@ -119,7 +109,7 @@ public class ServerMemberHandler extends ListenerAdapter {
 
             MessageEmbed embed = new EmbedBuilder()
                     .setAuthor("User Left",null,user.getAvatarUrl())
-                    .setDescription(String.format("%S has left the server",user.getAsMention()))
+                    .setDescription(String.format("%s (%s) has left the server",user.getAsMention(),user.getName()))
                     .setColor(Color.decode("#FF0000"))
                     .setThumbnail(user.getAvatarUrl())
                     .setFooter("ID: "+user.getIdLong())
