@@ -4,16 +4,17 @@ import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.WebhookClientBuilder;
 import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageType;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.awt.*;
 
 public class RantMessages extends ListenerAdapter {
 
@@ -23,48 +24,50 @@ public class RantMessages extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
 
-        if (event.getChannel().getIdLong() == 1477966443600679053L) {
 
-            Guild guild = event.getGuild();
-            Member member = event.getMember();
+        if (!event.isFromGuild() && !event.getAuthor().isBot()) {
+
             Message message = event.getMessage();
+            JDA jda = event.getJDA();
+            Guild guild = jda.getGuildById(1469324454470353163L);
 
-            //https://discord.com/api/webhooks/1477966705174249556/6bZbgbzxWFNUzpKCCS5AJefpTo1Q98_YTRy__THPH99Z-ErA5DrIuywGP5LIuPBh77UG
-            TextChannel logChannel = guild.getTextChannelById(1477965995451748373L);
-            WebhookClientBuilder webhookClientBuilder = new WebhookClientBuilder("https://discord.com/api/webhooks/1477966705174249556/6bZbgbzxWFNUzpKCCS5AJefpTo1Q98_YTRy__THPH99Z-ErA5DrIuywGP5LIuPBh77UG");
-            WebhookClient webhookClient = webhookClientBuilder.build();
+            if (guild != null) {
+                TextChannel channel = guild.getTextChannelById(1477966443600679053L);
 
+                if (channel == null) return;
 
+                MessageEmbed embed = new EmbedBuilder()
+                        .setAuthor("Unknown User",null,message.getAuthor().getDefaultAvatarUrl())
+                        .setColor(Color.ORANGE)
+                        .setDescription(message.getContentRaw())
+                        .setImage((!message.getAttachments().isEmpty() ? message.getAttachments().getFirst().getProxyUrl() : null))
+                        .setFooter("To create a rant message dm this account",jda.getSelfUser().getAvatarUrl())
+                        .build();
 
-            if (message.getType().equals(MessageType.INLINE_REPLY)) {
-                if (member != null && logChannel != null) {
-                    WebhookMessage webhookMessage = new WebhookMessageBuilder()
-                            .setUsername((member.getNickname() != null ? member.getNickname() : member.getEffectiveName()))
-                            .setContent(String.format("%s \n-# Replied to %s",message.getContentRaw(),message.getReferencedMessage().getAuthor().getEffectiveName()))
-                            .setAvatarUrl(member.getUser().getAvatarUrl())
-                            .build();
-                    webhookClient.send(webhookMessage).thenAccept(msg -> System.out.printf("Rant log "+msg.getContent()));
-
-                }
-
-
-            }else {
-                if (logChannel != null && member != null) {
-
-
-                    WebhookMessage webhookMessage = new WebhookMessageBuilder()
-                            .setUsername((member.getNickname() != null ? member.getNickname() : member.getEffectiveName()))
-                            .setContent(message.getContentRaw())
-                            .setAvatarUrl(member.getUser().getAvatarUrl())
+                channel.sendMessageEmbeds(embed).queue(message1 -> {
+                    MessageEmbed logEmbed = new EmbedBuilder()
+                            .setAuthor(message.getAuthor().getName(),null,message.getAuthor().getAvatarUrl())
+                            .setDescription(message.getContentRaw())
+                            .addField("Jump to Message",message1.getJumpUrl(),false)
+                            .setColor(Color.decode("#F5F5DC"))
                             .build();
 
+                    TextChannel rantLogs = guild.getTextChannelById(1477965995451748373L);
 
-                    webhookClient.send(webhookMessage).thenAccept(msg -> System.out.printf("Rant log "+msg.getContent()));
-                }
+                    if (rantLogs != null) rantLogs.sendMessageEmbeds(logEmbed).queue();
+
+                });
+
+
+
+
+
+
             }
 
 
         }
+
 
 
     }
