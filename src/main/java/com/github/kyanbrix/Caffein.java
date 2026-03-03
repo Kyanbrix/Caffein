@@ -98,7 +98,8 @@ public class Caffein {
                         GatewayIntent.GUILD_PRESENCES,
                         GatewayIntent.GUILD_MEMBERS,
                         GatewayIntent.GUILD_INVITES,
-                        GatewayIntent.GUILD_VOICE_STATES
+                        GatewayIntent.GUILD_VOICE_STATES,
+                        GatewayIntent.DIRECT_MESSAGES
                 )
                 .enableCache(CacheFlag.VOICE_STATE)
                 .setMemberCachePolicy(member -> member.getGuild().getIdLong() == 1469324454470353163L)
