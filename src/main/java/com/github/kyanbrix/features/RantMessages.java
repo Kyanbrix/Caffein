@@ -6,6 +6,10 @@ import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.section.Section;
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
+import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -15,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
+import java.time.Instant;
 
 public class RantMessages extends ListenerAdapter {
 
@@ -36,20 +41,19 @@ public class RantMessages extends ListenerAdapter {
 
                 if (channel == null) return;
 
-                MessageEmbed embed = new EmbedBuilder()
-                        .setAuthor("Unknown User",null,message.getAuthor().getDefaultAvatarUrl())
-                        .setColor(Color.ORANGE)
-                        .setDescription(message.getContentRaw())
-                        .setImage((!message.getAttachments().isEmpty() ? message.getAttachments().getFirst().getProxyUrl() : null))
-                        .setFooter("To create a rant message dm this account",jda.getSelfUser().getAvatarUrl())
-                        .build();
+                Container container = Container.of(
+                        TextDisplay.of("## "+message.getContentRaw()),
+                        TextDisplay.of("-# DM this account to create anonymous rant message")
+                );
 
-                channel.sendMessageEmbeds(embed).queue(message1 -> {
+                channel.sendMessageComponents(container).useComponentsV2().queue(message1 -> {
                     MessageEmbed logEmbed = new EmbedBuilder()
                             .setAuthor(message.getAuthor().getName(),null,message.getAuthor().getAvatarUrl())
                             .setDescription(message.getContentRaw())
                             .addField("Jump to Message",message1.getJumpUrl(),false)
                             .setColor(Color.decode("#F5F5DC"))
+                            .setFooter("User ID: "+message.getAuthor().getIdLong())
+                            .setTimestamp(Instant.now())
                             .build();
 
                     TextChannel rantLogs = guild.getTextChannelById(1477965995451748373L);
