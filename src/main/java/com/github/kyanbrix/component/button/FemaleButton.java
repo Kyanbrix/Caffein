@@ -53,6 +53,10 @@ public class FemaleButton implements IButton{
 
                 sendReplyEphemeral(event,String.format("I added %s and remove %s from your profile",femaleRole.getAsMention(),gayRole.getAsMention()));
 
+            }else {
+                guild.addRoleToMember(member,femaleRole).queue();
+                sendReplyEphemeral(event,String.format("I added %s from your profile",femaleRole.getAsMention()));
+
             }
 
 
