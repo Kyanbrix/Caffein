@@ -22,7 +22,6 @@ public class InviteTracker extends ListenerAdapter {
 
     private final Map<String, InviteData> inviteCache = new ConcurrentHashMap<>();
 
-
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
 
@@ -35,7 +34,10 @@ public class InviteTracker extends ListenerAdapter {
 
         TextChannel logChannel = guild.getTextChannelById(1477919584181813404L);
 
+
+
         guild.retrieveInvites().queue(invites -> {
+
 
             for (Invite invite: invites) {
 
@@ -43,26 +45,19 @@ public class InviteTracker extends ListenerAdapter {
                 final InviteData cache = inviteCache.get(code);
 
                 if (cache == null) continue;
+
                 if (invite.getUses() == cache.getNumberOfUses()) continue;
-                cache.incrementUses();
 
-                if (logChannel!=null) {
+                if (invite.getUses() > cache.getNumberOfUses()) {
+                    cache.incrementUses();
 
-                    MessageEmbed embed = new EmbedBuilder()
-                            .setAuthor("Invite Logger",null,guild.getIconUrl())
-                            .setDescription(String.format("User %s used invite url %s, created by %s",member.getAsMention(),invite.getUrl(),invite.getInviter().getAsMention()))
-                            .setColor(Color.decode("#FFEBCD"))
-                            .setThumbnail(member.getAvatarUrl())
-                            .setTimestamp(Instant.now().atZone(ZoneId.of("Asia/Manila")))
-                            .build();
-
-                    logChannel.sendMessageEmbeds(embed).queue();
-
-                }else System.out.println("Cannot find the log channel");
+                    sendMessageLogs(member, guild, logChannel, String.format("User %s used invite url ``%s`` created by %s",user.getAsMention(),invite.getUrl(),invite.getInviter().getAsMention()));
+                    return;
+                }
 
             }
 
-
+            sendMessageLogs(member,guild,logChannel,String.format("User %s used vanity url ``%s`` to join.",user.getAsMention(),guild.getVanityUrl()));
 
 
         });
@@ -72,6 +67,22 @@ public class InviteTracker extends ListenerAdapter {
 
 
 
+    }
+
+    private void sendMessageLogs(Member member, Guild guild, TextChannel logChannel,String description) {
+        if (logChannel!=null) {
+
+            MessageEmbed embed = new EmbedBuilder()
+                    .setAuthor("Invite Logger",null,guild.getIconUrl())
+                    .setDescription(description)
+                    .setColor(Color.decode("#FFEBCD"))
+                    .setThumbnail(member.getAvatarUrl())
+                    .setTimestamp(Instant.now())
+                    .build();
+
+            logChannel.sendMessageEmbeds(embed).queue();
+
+        }else System.out.println("Cannot find the log channel");
     }
 
     @Override
