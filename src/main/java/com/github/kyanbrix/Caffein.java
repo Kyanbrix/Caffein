@@ -101,14 +101,12 @@ public class Caffein {
                         GatewayIntent.GUILD_VOICE_STATES,
                         GatewayIntent.DIRECT_MESSAGES
                 )
-                .enableCache(CacheFlag.VOICE_STATE)
+                .enableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.SCHEDULED_EVENTS,CacheFlag.STICKER)
                 .setMemberCachePolicy(member -> member.getGuild().getIdLong() == 1469324454470353163L)
                 .setChunkingFilter(ChunkingFilter.ALL)
                 .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new ModalComponent(), new RantMessages(), new ServerVoiceLogs())
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
-
-
 
 
 
