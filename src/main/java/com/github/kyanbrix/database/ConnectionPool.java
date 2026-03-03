@@ -24,10 +24,13 @@ public class ConnectionPool {
         hikariConfig.setPassword(dbPassword);
         hikariConfig.setJdbcUrl(dbUrl);
         hikariConfig.setSchema("public");
+        hikariConfig.setIdleTimeout(60000);
+        hikariConfig.setMaxLifetime(1800000);
+        hikariConfig.setMinimumIdle(0);
         hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
         hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        hikariConfig.setMaximumPoolSize(5);
+        hikariConfig.setMaximumPoolSize(10);
 
         dataSource = new HikariDataSource(hikariConfig);
     }
@@ -61,7 +64,4 @@ public class ConnectionPool {
         return value;
     }
 
-    public HikariDataSource getDataSource() {
-        return dataSource;
-    }
 }
