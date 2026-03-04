@@ -66,7 +66,7 @@ public class ConfessionModal extends ListenerAdapter {
 
                     channel.sendMessageComponents(container(confession_id, confession,attachment.getFirst().getProxyUrl())).useComponentsV2().queue(confessionMessage-> {
                         try (Connection con = Caffein.getInstance().getConnection()) {
-                            try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (confession_id, message_id, author_id)")) {
+                            try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (confession_id, message_id, author_id) VALUES (?,?,?)")) {
                                 insert.setLong(1,confession_id);
                                 insert.setLong(2,confessionMessage.getIdLong());
                                 insert.setLong(3,user.getIdLong());
@@ -94,7 +94,7 @@ public class ConfessionModal extends ListenerAdapter {
 
                     channel.sendMessageComponents(container(confession_id,confession)).useComponentsV2().queue(confessionMessage-> {
                         try (Connection con = Caffein.getInstance().getConnection()) {
-                            try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (confession_id, message_id, author_id)")) {
+                            try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (confession_id, message_id, author_id) VALUES (?,?,?)")) {
                                 insert.setLong(1,confession_id);
                                 insert.setLong(2,confessionMessage.getIdLong());
                                 insert.setLong(3,user.getIdLong());
