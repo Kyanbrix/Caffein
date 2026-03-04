@@ -33,6 +33,9 @@ public class FeedbackModal extends ListenerAdapter {
     @Override
     public void onModalInteraction(@NotNull ModalInteractionEvent event) {
 
+        if (!event.getCustomId().equalsIgnoreCase("feedbackModal")) return;
+
+
         String feedback = event.getValue(FEEDBACK_FIELD_ID).getAsString();
         List<Message.Attachment> attachments = event.getValue(ATTACHMENT_FIELD_ID).getAsAttachmentList();
 
