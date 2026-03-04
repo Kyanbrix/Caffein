@@ -35,6 +35,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.List;
 
 public class ConfessionModal extends ListenerAdapter {
 
@@ -47,7 +48,7 @@ public class ConfessionModal extends ListenerAdapter {
 
         String confession = event.getValue("confess").getAsString();
         MessageChannelUnion channel = event.getChannel();
-        Message.Attachment attachment = event.getValue("attachment").getAsAttachmentList().getFirst();
+        List<Message.Attachment> attachment = event.getValue("attachment").getAsAttachmentList();
         MessageComponentTree componentTree = event.getMessage().getComponentTree();
         User user = event.getUser();
         Guild guild = event.getGuild();
@@ -61,9 +62,9 @@ public class ConfessionModal extends ListenerAdapter {
             case CONFESSION_MODAL_ID -> {
 
                 componentReplacer(componentTree, event.getMessage(), event.deferReply());
-                if (attachment != null) {
+                if (!attachment.isEmpty()) {
 
-                    channel.sendMessageComponents(container(confession_id, confession,attachment.getProxyUrl())).useComponentsV2().queue(confessionMessage-> {
+                    channel.sendMessageComponents(container(confession_id, confession,attachment.getFirst().getProxyUrl())).useComponentsV2().queue(confessionMessage-> {
                         try (Connection con = Caffein.getInstance().getConnection()) {
                             try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (confession_id, message_id, author_id)")) {
                                 insert.setLong(1,confession_id);
