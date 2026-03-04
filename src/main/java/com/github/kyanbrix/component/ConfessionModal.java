@@ -58,7 +58,8 @@ public class ConfessionModal extends ListenerAdapter {
         User user = event.getUser();
         Guild guild = event.getGuild();
 
-        TextChannel confessionChannel = guild.getTextChannelById(1474657187547713627L);
+        TextChannel confessionChannel = guild.getTextChannelById(1478668080535179408L);
+
 
         int confession_id = getCurrentConfessionId() + 1;
 
