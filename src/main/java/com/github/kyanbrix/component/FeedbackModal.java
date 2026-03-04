@@ -20,9 +20,9 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModalComponent extends ListenerAdapter {
+public class FeedbackModal extends ListenerAdapter {
 
-    private static final Logger log = LoggerFactory.getLogger(ModalComponent.class);
+    private static final Logger log = LoggerFactory.getLogger(FeedbackModal.class);
     private static final long FEEDBACK_LOG_CHANNEL_ID = 1470147677546090731L;
     private static final String FEEDBACK_FIELD_ID = "feed";
     private static final String ATTACHMENT_FIELD_ID = "attachment";
