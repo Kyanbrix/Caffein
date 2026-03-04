@@ -48,7 +48,7 @@ public class ConfessionModal extends ListenerAdapter {
 
         String confession = event.getValue("confess").getAsString();
         MessageChannelUnion channel = event.getChannel();
-        List<Message.Attachment> attachment = event.getValue("attachment").getAsAttachmentList();
+        List<Message.Attachment> attachment = event.getValue("attachment-upload").getAsAttachmentList();
         MessageComponentTree componentTree = event.getMessage().getComponentTree();
         User user = event.getUser();
         Guild guild = event.getGuild();
