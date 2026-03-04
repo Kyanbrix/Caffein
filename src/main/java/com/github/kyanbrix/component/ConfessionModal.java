@@ -36,6 +36,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Random;
 
 public class ConfessionModal extends ListenerAdapter {
 
@@ -43,6 +44,12 @@ public class ConfessionModal extends ListenerAdapter {
     private static final String REPLY_MODAL_ID = "replyConfession";
     private static final Logger log = LoggerFactory.getLogger(ConfessionModal.class);
     private static final long CONFESSION_CHANNEL_LOG_ID = 1470162738910203994L;
+    private static final Random random = new Random();
+
+    private static final String[] colors = new String[]{"#FAEBD7","#F0F8FF","#00FFFF","#7FFF00","#000000","#F5F5DC","#0000FF","#DEB887","#DC143C","#8FBC8F","#FF1493","#FFD700","#F08080","#98FB98","#DDA0DD","#EE82EE","#40E0D0","#C0C0C0","#4169E1","#00FF00","#800000",
+            "#8A2BE2","#A0522D","#F8F8FF","#FF4500","#FF0000","#FFDEAD"};
+
+
     @Override
     public void onModalInteraction(@NotNull ModalInteractionEvent event) {
 
@@ -129,12 +136,16 @@ public class ConfessionModal extends ListenerAdapter {
 
                     if (threadChannel != null) {
 
+
+
                         handle(user, guild, confession_id, replyConfess, threadChannel);
 
 
                     }else message.createThreadChannel("Replied to Confession "+replyId).queue(threadChannel1 -> handle(user, guild, confession_id, replyConfess, threadChannel1));
 
 
+
+                    event.reply("Your reply has sent.").setEphemeral(true).queue();
 
                 },new ErrorHandler().handle(ErrorResponse.UNKNOWN_MESSAGE,e -> event.reply("Confession ID not Found! Try Again.").setEphemeral(true).queue()));
 
@@ -162,6 +173,8 @@ public class ConfessionModal extends ListenerAdapter {
 
 
                 sendConfessionToLogs(guild,user,replyConfess,replyMessage.getJumpUrl());
+
+
 
 
             }catch (SQLException e) {
@@ -208,7 +221,7 @@ public class ConfessionModal extends ListenerAdapter {
 
 
         message.editMessageComponents(newContainer).useComponentsV2().queue();
-        replyCallbackAction.flatMap(interactionHook -> interactionHook.sendMessage("Your confession has been created!").setEphemeral(true)).queue();
+        replyCallbackAction.setEphemeral(true).flatMap(interactionHook -> interactionHook.sendMessage("Your confession has been created!").setEphemeral(true)).queue();
     }
 
     private Container container(int id, String confession, String attachmentUrl) {
@@ -220,7 +233,7 @@ public class ConfessionModal extends ListenerAdapter {
 
                 Separator.createInvisible(Separator.Spacing.SMALL),
                 MediaGallery.of(MediaGalleryItem.fromUrl(attachmentUrl)),
-                Separator.createInvisible(Separator.Spacing.LARGE),
+                Separator.createDivider(Separator.Spacing.LARGE),
                 ActionRow.of(
 
                         Button.of(ButtonStyle.SUCCESS,"confess","Create Confession", Emoji.fromUnicode("U+2709")),
@@ -228,7 +241,7 @@ public class ConfessionModal extends ListenerAdapter {
 
                 )
 
-        );
+        ).withAccentColor(getColor());
 
 
     }
@@ -240,10 +253,10 @@ public class ConfessionModal extends ListenerAdapter {
 
         return Container.of(
 
-                TextDisplay.of(String.format("### Anonymous Confession (%d)",id)),
+                TextDisplay.of(String.format("### Anonymous Confession (#%d)",id)),
                 TextDisplay.of(String.format("%s",confession)),
 
-                Separator.createInvisible(Separator.Spacing.SMALL),
+                Separator.createDivider(Separator.Spacing.LARGE),
                 ActionRow.of(
 
                         Button.of(ButtonStyle.SUCCESS,"confess","Create Confession", Emoji.fromUnicode("U+2709")),
@@ -251,7 +264,7 @@ public class ConfessionModal extends ListenerAdapter {
 
                 )
 
-        );
+        ).withAccentColor(getColor());
 
 
     }
@@ -260,16 +273,15 @@ public class ConfessionModal extends ListenerAdapter {
 
         return Container.of(
 
-                TextDisplay.of(String.format("### Anonymous Reply (%d)",id)),
+                TextDisplay.of(String.format("## Anonymous Reply (#%d)",id)),
                 TextDisplay.of(String.format("%s",confession)),
 
-                Separator.createInvisible(Separator.Spacing.SMALL),
-                Separator.createInvisible(Separator.Spacing.LARGE),
+                Separator.createDivider(Separator.Spacing.LARGE),
                 ActionRow.of(
                         Button.of(ButtonStyle.SECONDARY,"replyConfess","Reply a Confession")
                 )
 
-        );
+        ).withAccentColor(getColor());
 
 
     }
@@ -297,4 +309,11 @@ public class ConfessionModal extends ListenerAdapter {
         return 0;
 
     }
+
+    private Color getColor() {
+
+        return Color.decode(colors[random.nextInt(colors.length)]);
+
+    }
+
 }
