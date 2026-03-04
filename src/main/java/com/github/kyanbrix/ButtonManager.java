@@ -19,6 +19,7 @@ public class ButtonManager extends ListenerAdapter {
         this.addButtons(new GayButton());
         this.addButtons(new FemaleButton());
         this.addButtons(new Feedback());
+        this.addButtons(new ReplyConfess());
     }
 
 
