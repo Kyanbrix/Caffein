@@ -8,7 +8,10 @@ import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import com.github.kyanbrix.Caffein;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
@@ -29,7 +32,7 @@ public class ServerMemberHandler extends ListenerAdapter {
 
 
     private static final Logger log = LoggerFactory.getLogger(ServerMemberHandler.class);
-
+    private static final long GUILD_ID = 1477920217270194298L;
 
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
@@ -149,64 +152,64 @@ public class ServerMemberHandler extends ListenerAdapter {
     public void onUserUpdatePrimaryGuild(@NotNull UserUpdatePrimaryGuildEvent event) {
 
         User.PrimaryGuild primaryGuild = event.getNewPrimaryGuild();
-        Guild guild = event.getJDA().getGuildById(1469324454470353163L);
+        User.PrimaryGuild oldGuild = event.getOldPrimaryGuild();
         User user = event.getUser();
 
+        Guild guild = event.getJDA().getGuildById(GUILD_ID);
+
+        TextChannel logChannel = guild.getTextChannelById(1477920635748352123L);
 
 
-        if (guild != null) {
+
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setAuthor(user.getName(),null,user.getAvatarUrl());
+        builder.setTimestamp(Instant.now());
+        builder.setColor(Color.decode("#FF4500"));
 
 
-            guild.retrieveMember(user).queue(member -> {
-                TextChannel logChannel = guild.getTextChannelById(1477920635748352123L);
 
-                EmbedBuilder builder = new EmbedBuilder();
-                try {
-                    Role role = guild.getRoleById(1475742792092487851L);
+        //no tag before then added a tag right after
+        if (oldGuild == null && primaryGuild != null) {
+            ;
+            if (primaryGuild.getIdLong() == GUILD_ID) {
+                builder.setDescription(String.format("%s used our server tag",user.getAsMention()));
+            }
 
-                    if (primaryGuild == null) {
-                        if (member.getRoles().contains(role)) {
-                            guild.removeRoleFromMember(member,role).queue();
-
-                            builder.setAuthor(member.getEffectiveName(),null,user.getAvatarUrl());
-                            builder.setDescription(String.format("%s removed our server tag from their profile",member.getAsMention()));
-                            builder.setColor(Color.decode("#FF4500"));
-                            builder.setTimestamp(Instant.now());
-                        }
-
-                    }else if (primaryGuild.getIdLong() == 1469324454470353163L) {
-
-                        if (!member.getRoles().contains(role)) {
-                            guild.addRoleToMember(member,role).queue();
-                            builder.setAuthor(member.getEffectiveName(),null,user.getAvatarUrl());
-                            builder.setDescription(String.format("%s used our server tag",member.getAsMention()));
-                            builder.setColor(Color.decode("#90EE90"));
-                            builder.setTimestamp(Instant.now());
-
-
-                        }
-
-                    } else if (primaryGuild.getIdLong() != 1469324454470353163L) {
-                        if (!member.getRoles().contains(role)) {
-                            guild.removeRoleFromMember(member,role).queue();
-                            builder.setAuthor(member.getEffectiveName(),null,user.getAvatarUrl());
-                            builder.setDescription(String.format("%s removed our server tag from their profile",member.getAsMention()));
-                            builder.setColor(Color.decode("#FF4500"));
-                            builder.setTimestamp(Instant.now());
-
-                        }
-                    }
-
-                    logChannel.sendMessageEmbeds(builder.build()).queue();
-                }catch (Exception e) {
-                    log.error(e.getMessage(),e.fillInStackTrace());
-                }
-
-            });
 
 
         }
 
+        if (oldGuild != null && primaryGuild != null) {
+
+            if (oldGuild.getIdLong() == GUILD_ID && primaryGuild.getIdLong() != GUILD_ID) {
+
+                builder.setDescription(String.format("%s removed our server tag from their profile",user.getAsMention()));
+                builder.setColor(Color.decode("#FF4500"));
+
+
+            }else if (oldGuild.getIdLong() != GUILD_ID && primaryGuild.getIdLong() == GUILD_ID) {
+
+                builder.setDescription(String.format("%s used our server tag",user.getAsMention()));
+            }
+
+
+        }
+
+        //User has tag before then remove the tag
+        if (oldGuild != null && primaryGuild == null) {
+
+            if (oldGuild.getIdLong() == GUILD_ID) {
+                builder.setDescription(String.format("%s removed our server tag from their profile",user.getAsMention()));
+                builder.setColor(Color.decode("#FF4500"));
+
+            }
+
+        }
+
+
+        if (logChannel == null) return;
+
+        logChannel.sendMessageEmbeds(builder.build()).queue();
 
 
 
