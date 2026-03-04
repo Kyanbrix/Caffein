@@ -6,9 +6,9 @@ import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.container.ContainerChildComponentUnion;
 import net.dv8tion.jda.api.components.mediagallery.MediaGallery;
 import net.dv8tion.jda.api.components.mediagallery.MediaGalleryItem;
-import net.dv8tion.jda.api.components.replacer.ComponentReplacer;
 import net.dv8tion.jda.api.components.separator.Separator;
 import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.components.tree.MessageComponentTree;
@@ -90,6 +90,7 @@ public class ConfessionModal extends ListenerAdapter {
 
 
                 }else {
+                    componentReplacer(componentTree, event.getMessage(), event.deferReply());
 
                     channel.sendMessageComponents(container(confession_id,confession)).useComponentsV2().queue(confessionMessage-> {
                         try (Connection con = Caffein.getInstance().getConnection()) {
@@ -197,15 +198,16 @@ public class ConfessionModal extends ListenerAdapter {
 
 
     public static void componentReplacer(MessageComponentTree componentTree, Message message, ReplyCallbackAction replyCallbackAction) {
-        ComponentReplacer replacer = ComponentReplacer.of(
-                Button.class,
-                button -> true,
-                button -> null
-        );
 
-        MessageComponentTree updated = componentTree.replace(replacer);
+        Container oldContainer = componentTree.getComponents().getFirst().asContainer();
 
-        message.editMessageComponents(updated).useComponentsV2().queue();
+        List<ContainerChildComponentUnion> newComponent = oldContainer.getComponents().stream().filter(component -> !(component instanceof ActionRow))
+                .toList();
+
+        Container newContainer = Container.of(newComponent);
+
+
+        message.editMessageComponents(newContainer).useComponentsV2().queue();
         replyCallbackAction.flatMap(interactionHook -> interactionHook.sendMessage("Your confession has been created!").setEphemeral(true)).queue();
     }
 
@@ -242,7 +244,6 @@ public class ConfessionModal extends ListenerAdapter {
                 TextDisplay.of(String.format("%s",confession)),
 
                 Separator.createInvisible(Separator.Spacing.SMALL),
-                Separator.createInvisible(Separator.Spacing.LARGE),
                 ActionRow.of(
 
                         Button.of(ButtonStyle.SUCCESS,"confess","Create Confession", Emoji.fromUnicode("U+2709")),
