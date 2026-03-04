@@ -27,7 +27,7 @@ public class SetupConfession implements ICommand {
         if (channel != null) {
             Container container = Container.of(
 
-                    TextDisplay.of("Create a Confession"),
+                    TextDisplay.of("## Create a Confession"),
 
                     ActionRow.of(
                             Button.of(ButtonStyle.SUCCESS,"confess","Create Confession", Emoji.fromUnicode("U+2709"))
