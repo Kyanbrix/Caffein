@@ -74,7 +74,7 @@ public class ConfessionModal extends ListenerAdapter {
 
                     channel.sendMessageComponents(container(confession_id, confession,attachment.getFirst().getProxyUrl())).useComponentsV2().queue(confessionMessage-> {
                         try (Connection con = Caffein.getInstance().getConnection()) {
-                            try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (message_id, author_id) VALUES (?,?,?)")) {
+                            try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (message_id, author_id) VALUES (?,?)")) {
                                 insert.setLong(1,confessionMessage.getIdLong());
                                 insert.setLong(2,user.getIdLong());
 
@@ -129,6 +129,54 @@ public class ConfessionModal extends ListenerAdapter {
 
                 String replyId = event.getValue("replyId").getAsString();
                 String replyConfess = event.getValue("replyConfess").getAsString();
+
+
+                try (Connection connection = Caffein.getInstance().getConnection()) {
+                    try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM confession WHERE confession_id = ?")) {
+                        ps.setObject(1,replyId);
+                        try (ResultSet set = ps.executeQuery()) {
+
+                            if (set.next()) {
+
+                                long message_id = set.getLong("message_id");
+
+                                confessionChannel.retrieveMessageById(message_id).queue(message -> {
+
+                                    ThreadChannel threadChannel = message.getStartedThread();
+
+                                    if (threadChannel != null) {
+                                        handle(user, guild, confession_id, replyConfess, threadChannel);
+                                        event.reply("Your reply has sent.").setEphemeral(true).queue();
+
+                                    } else message.createThreadChannel("Replied to Confession "+replyId).queue(threadChannel1 -> {
+                                        handle(user, guild, confession_id, replyConfess, threadChannel1);
+                                        event.reply("Your reply has sent.").setEphemeral(true).queue();
+
+
+                                    });
+
+
+                                },new ErrorHandler().handle(ErrorResponse.UNKNOWN_MESSAGE,e -> event.reply("Cannot retrieve that confession id").setEphemeral(true).queue()));
+
+
+
+
+                            }else {
+                                event.reply("Cannot find that confession id!").setEphemeral(true).queue();
+                            }
+
+
+                        }
+
+
+                    }
+
+
+
+                }catch (SQLException e) {
+                    log.error("SQL Error",e);
+                }
+
 
                 confessionChannel.retrieveMessageById(replyId).queue(message -> {
 
