@@ -43,7 +43,7 @@ public class ConfessionModal extends ListenerAdapter {
     public static final String CONFESSION_MODAL_ID = "confession";
     private static final String REPLY_MODAL_ID = "replyConfession";
     private static final Logger log = LoggerFactory.getLogger(ConfessionModal.class);
-    private static final long CONFESSION_CHANNEL_LOG_ID = 1470162738910203994L;
+    private static final long CONFESSION_CHANNEL_LOG_ID = 1478673936534470666L;
     private static final Random random = new Random();
 
     private static final String[] colors = new String[]{"#FAEBD7","#F0F8FF","#00FFFF","#7FFF00","#000000","#F5F5DC","#0000FF","#DEB887","#DC143C","#8FBC8F","#FF1493","#FFD700","#F08080","#98FB98","#DDA0DD","#EE82EE","#40E0D0","#C0C0C0","#4169E1","#00FF00","#800000",
@@ -53,9 +53,7 @@ public class ConfessionModal extends ListenerAdapter {
     @Override
     public void onModalInteraction(@NotNull ModalInteractionEvent event) {
 
-        String confession = event.getValue("confess").getAsString();
         MessageChannelUnion channel = event.getChannel();
-        List<Message.Attachment> attachment = event.getValue("attachment-upload").getAsAttachmentList();
         MessageComponentTree componentTree = event.getMessage().getComponentTree();
         User user = event.getUser();
         Guild guild = event.getGuild();
@@ -67,6 +65,9 @@ public class ConfessionModal extends ListenerAdapter {
         switch (event.getCustomId()) {
 
             case CONFESSION_MODAL_ID -> {
+
+                String confession = event.getValue("confess").getAsString();
+                List<Message.Attachment> attachment = event.getValue("attachment-upload").getAsAttachmentList();
 
                 if (!attachment.isEmpty()) {
 
