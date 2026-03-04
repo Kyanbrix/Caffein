@@ -68,15 +68,15 @@ public class ConfessionModal extends ListenerAdapter {
 
             case CONFESSION_MODAL_ID -> {
 
-                componentReplacer(componentTree, event.getMessage(), event.deferReply());
                 if (!attachment.isEmpty()) {
+
+                    componentReplacer(componentTree, event.getMessage(), event.deferReply());
 
                     channel.sendMessageComponents(container(confession_id, confession,attachment.getFirst().getProxyUrl())).useComponentsV2().queue(confessionMessage-> {
                         try (Connection con = Caffein.getInstance().getConnection()) {
-                            try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (confession_id, message_id, author_id) VALUES (?,?,?)")) {
-                                insert.setLong(1,confession_id);
-                                insert.setLong(2,confessionMessage.getIdLong());
-                                insert.setLong(3,user.getIdLong());
+                            try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (message_id, author_id) VALUES (?,?,?)")) {
+                                insert.setLong(1,confessionMessage.getIdLong());
+                                insert.setLong(2,user.getIdLong());
 
                                 insert.executeUpdate();
 
@@ -97,14 +97,14 @@ public class ConfessionModal extends ListenerAdapter {
 
 
                 }else {
+
                     componentReplacer(componentTree, event.getMessage(), event.deferReply());
 
                     channel.sendMessageComponents(container(confession_id,confession)).useComponentsV2().queue(confessionMessage-> {
                         try (Connection con = Caffein.getInstance().getConnection()) {
-                            try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (confession_id, message_id, author_id) VALUES (?,?,?)")) {
-                                insert.setLong(1,confession_id);
-                                insert.setLong(2,confessionMessage.getIdLong());
-                                insert.setLong(3,user.getIdLong());
+                            try (PreparedStatement insert = con.prepareStatement("INSERT INTO confession (message_id, author_id) VALUES (?,?)")) {
+                                insert.setLong(1,confessionMessage.getIdLong());
+                                insert.setLong(2,user.getIdLong());
 
                                 insert.executeUpdate();
 
@@ -163,10 +163,9 @@ public class ConfessionModal extends ListenerAdapter {
 
             try (Connection connection = Caffein.getInstance().getConnection()) {
 
-                try (PreparedStatement insert = connection.prepareStatement("INSERT INTO confession (confession_id, message_id, author_id) VALUES (?,?,?)")) {
-                    insert.setLong(1,confession_id);
-                    insert.setLong(2,replyMessage.getIdLong());
-                    insert.setLong(3,user.getIdLong());
+                try (PreparedStatement insert = connection.prepareStatement("INSERT INTO confession (message_id, author_id) VALUES (?,?)")) {
+                    insert.setLong(1,replyMessage.getIdLong());
+                    insert.setLong(2,user.getIdLong());
 
                     insert.executeUpdate();
                 }
@@ -210,14 +209,14 @@ public class ConfessionModal extends ListenerAdapter {
     }
 
 
-    public static void componentReplacer(MessageComponentTree componentTree, Message message, ReplyCallbackAction replyCallbackAction) {
+    public void componentReplacer(MessageComponentTree componentTree, Message message, ReplyCallbackAction replyCallbackAction) {
 
         Container oldContainer = componentTree.getComponents().getFirst().asContainer();
 
-        List<ContainerChildComponentUnion> newComponent = oldContainer.getComponents().stream().filter(component -> !(component instanceof ActionRow))
+        List<ContainerChildComponentUnion> newComponent = oldContainer.getComponents().stream().filter(component -> !(component instanceof ActionRow) && !(component instanceof Separator))
                 .toList();
 
-        Container newContainer = Container.of(newComponent);
+        Container newContainer = Container.of(newComponent).withAccentColor(oldContainer.getAccentColor());
 
 
         message.editMessageComponents(newContainer).useComponentsV2().queue();
@@ -230,8 +229,6 @@ public class ConfessionModal extends ListenerAdapter {
 
                 TextDisplay.of(String.format("### Anonymous Confession (%d)",id)),
                 TextDisplay.of(String.format("%s",confession)),
-
-                Separator.createInvisible(Separator.Spacing.SMALL),
                 MediaGallery.of(MediaGalleryItem.fromUrl(attachmentUrl)),
                 Separator.createDivider(Separator.Spacing.LARGE),
                 ActionRow.of(
