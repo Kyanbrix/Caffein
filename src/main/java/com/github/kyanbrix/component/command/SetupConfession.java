@@ -13,30 +13,27 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 public class SetupConfession implements ICommand {
 
-    private static final long channelID = 1477869516682956880L;
 
     @Override
     public void accept(MessageReceivedEvent event) {
 
         if (event.getAuthor().getIdLong() != Constant.KIAN_ID) return;
 
-        Guild guild = event.getGuild();
 
-        TextChannel channel = guild.getTextChannelById(channelID);
 
-        if (channel != null) {
-            Container container = Container.of(
 
-                    TextDisplay.of("## Create a Confession"),
+        Container container = Container.of(
 
-                    ActionRow.of(
-                            Button.of(ButtonStyle.SUCCESS,"confess","Create Confession", Emoji.fromUnicode("U+2709"))
-                    )
+                TextDisplay.of("## Create a Confession"),
 
-            );
+                ActionRow.of(
+                        Button.of(ButtonStyle.SUCCESS,"confess","Create Confession", Emoji.fromUnicode("U+2709"))
+                )
 
-            channel.sendMessageComponents(container).useComponentsV2().queue();
-        }
+        );
+
+        event.getChannel().sendMessageComponents(container).useComponentsV2().queue();
+
 
 
     }
