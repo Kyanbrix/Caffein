@@ -1,5 +1,6 @@
 package com.github.kyanbrix;
 
+import com.github.kyanbrix.component.ConfessionModal;
 import com.github.kyanbrix.component.FeedbackModal;
 import com.github.kyanbrix.component.StringSelectionComponent;
 import com.github.kyanbrix.component.command.CommandManager;
@@ -106,7 +107,7 @@ public class Caffein {
                 .enableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.SCHEDULED_EVENTS,CacheFlag.STICKER)
                 .setMemberCachePolicy(member -> member.getGuild().getIdLong() == 1469324454470353163L)
                 .setChunkingFilter(ChunkingFilter.ALL)
-                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new FeedbackModal(), new RantMessages(), new ServerVoiceLogs())
+                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new FeedbackModal(), new RantMessages(), new ServerVoiceLogs(), new ConfessionModal())
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
 
