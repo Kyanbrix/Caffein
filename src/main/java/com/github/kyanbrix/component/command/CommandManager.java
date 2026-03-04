@@ -21,6 +21,7 @@ public class CommandManager extends ListenerAdapter {
         this.addCommands(new RoleSelectionCommand());
         this.addCommands(new GetUserAvatar());
         this.addCommands(new GetUserBanner());
+        this.addCommands(new SetupConfession());
     }
 
 
