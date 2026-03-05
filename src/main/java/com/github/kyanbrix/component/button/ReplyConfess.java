@@ -10,6 +10,8 @@ public class ReplyConfess implements IButton{
     @Override
     public void accept(ButtonInteractionEvent event) {
 
+
+
         Modal modal = Modal.create("replyConfession","Reply to Confession")
                 .addComponents(Label.of("Reply", TextInput.create("replyConfess", TextInputStyle.PARAGRAPH).setMaxLength(1000).setRequired(true).build()),
                         Label.of("Confession ID",TextInput.create("replyId",TextInputStyle.SHORT).setRequired(true).setMaxLength(6).build())
