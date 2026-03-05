@@ -42,10 +42,10 @@ public class RoleCreationModal extends ListenerAdapter {
 
                 List<Message.Attachment> icon = event.getValue("role_icon").getAsAttachmentList();
 
-                Message.Attachment roleImage = icon.getFirst();
-
 
                 if (!icon.isEmpty()) {
+
+                    Message.Attachment roleImage = icon.getFirst();
 
                     roleImage.getProxy().download().thenAccept(inputStream -> {
 
