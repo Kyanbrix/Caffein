@@ -8,13 +8,11 @@ import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import com.github.kyanbrix.Caffein;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdatePrimaryGuildEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.TimeFormat;
@@ -25,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 
@@ -166,16 +165,12 @@ public class ServerMemberHandler extends ListenerAdapter {
         builder.setTimestamp(Instant.now());
         builder.setColor(Color.decode("#FF4500"));
 
-
-
         //no tag before then added a tag right after
         if (oldGuild == null && primaryGuild != null) {
             ;
             if (primaryGuild.getIdLong() == GUILD_ID) {
                 builder.setDescription(String.format("%s used our server tag",user.getAsMention()));
             }
-
-
 
         }
 
@@ -215,4 +210,58 @@ public class ServerMemberHandler extends ListenerAdapter {
 
     }
 
+    @Override
+    public void onGuildMemberRoleRemove(@NotNull GuildMemberRoleRemoveEvent event) {
+
+        Member member = event.getMember();
+
+        Guild guild = event.getGuild();
+
+        if (event.getRoles().contains(guild.getBoostRole())) {
+
+            try (Connection connection = Caffein.getInstance().getConnection()) {
+
+                try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM premium_role WHERE user_id = ?")) {
+                    ps.setLong(1,member.getIdLong());
+
+                    try (ResultSet set = ps.executeQuery()) {
+
+                        if (set.next()) {
+
+                            long roleId = set.getLong("role_id");
+
+                            Role role = guild.getRoleById(roleId);
+
+                            if (role != null) guild.removeRoleFromMember(member,role).queue();
+
+                            try (PreparedStatement delete = connection.prepareStatement("DELETE FROM premium_role WHERE user_id = ?")) {
+                                delete.setLong(1,member.getIdLong());
+                                delete.executeUpdate();
+
+                                log.info("Successfully remove a user from premium_role");
+                            }
+
+
+                        }
+
+
+                    }
+
+                }
+
+            }catch (SQLException e) {
+                log.error("Error on retrieving data from premium_role",e);
+            }
+
+
+
+
+
+        }
+
+
+
+
+
+    }
 }
