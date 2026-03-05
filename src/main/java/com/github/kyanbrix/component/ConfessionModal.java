@@ -190,7 +190,6 @@ public class ConfessionModal extends ListenerAdapter {
                                                         }
 
 
-                                                        event.getHook().sendMessage("Successfully replied to a confession.").setEphemeral(true).queue();
 
 
 
@@ -211,6 +210,8 @@ public class ConfessionModal extends ListenerAdapter {
 
 
                                         });
+
+                                        event.reply("Successfully replied to a confession.").setEphemeral(true).queue();
 
                                     }else event.reply("Cannot find that confession id!").setEphemeral(true).queue();
 
@@ -251,15 +252,12 @@ public class ConfessionModal extends ListenerAdapter {
 
                                                 handle(user,guild,confession_id,replyConfess,threadChannel);
 
-                                                event.getHook().sendMessage("Successfully reply to a confession").setEphemeral(true).queue();
 
                                             }else {
 
                                                 confessionMessage.createThreadChannel(String.format("Reply to Confession (#%d)",replyId)).queue(threadChannel1 -> {
 
                                                     handle(user,guild,confession_id,replyConfess,threadChannel1);
-
-                                                    event.getHook().sendMessage("Successfully reply to a confession").setEphemeral(true).queue();
 
 
                                                 });
@@ -275,6 +273,7 @@ public class ConfessionModal extends ListenerAdapter {
 
                                         });
 
+                                        event.reply("Successfully replied to a confession").setEphemeral(true).queue();
 
                                     }else event.reply("Cannot find that confession id").setEphemeral(true).queue();
 
