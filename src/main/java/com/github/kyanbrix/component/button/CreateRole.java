@@ -32,7 +32,7 @@ public class CreateRole implements IButton{
         List<Long> memberRoles = event.getMember().getRoles().stream().map(Role::getIdLong).toList();
 
 
-        if (!memberRoles.contains(1477694631838875689L) || !memberRoles.contains(1474656723078746155L)) {
+        if (!memberRoles.contains(1477694631838875689L) && !memberRoles.contains(1474656723078746155L)) {
 
             event.reply("Only for server booster and sponsors/donators").setEphemeral(true).queue();
             return;
