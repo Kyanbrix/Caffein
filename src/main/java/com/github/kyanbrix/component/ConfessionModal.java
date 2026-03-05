@@ -86,7 +86,7 @@ public class ConfessionModal extends ListenerAdapter {
 
                             }
 
-                            sendConfessionToLogs(guild,user,confession,confessionMessage.getJumpUrl());
+                            sendConfessionToLogs(guild,user,confession,confessionMessage.getJumpUrl(),confession_id);
 
                         }catch (SQLException e) {
                             log.error("Error on callback sql ",e);
@@ -114,7 +114,7 @@ public class ConfessionModal extends ListenerAdapter {
 
                             }
 
-                            sendConfessionToLogs(guild,user,confession,confessionMessage.getJumpUrl());
+                            sendConfessionToLogs(guild,user,confession,confessionMessage.getJumpUrl(),confession_id);
 
                         }catch (SQLException e) {
                             log.error("Error on callback sql ",e);
@@ -129,58 +129,163 @@ public class ConfessionModal extends ListenerAdapter {
 
             case REPLY_MODAL_ID -> {
 
-
                 try {
                     int replyId = Integer.parseInt(event.getValue("replyId").getAsString());
                     String replyConfess = event.getValue("replyConfess").getAsString();
 
 
-                    try (Connection connection = Caffein.getInstance().getConnection()) {
-                        try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM confession WHERE confession_id = ?")) {
-                            ps.setInt(1,replyId);
-                            try (ResultSet set = ps.executeQuery()) {
+                    //if user is on a thread
+                    if (event.getMessage().getChannelType().isThread()) {
 
-                                if (set.next()) {
+                        try (Connection connection = Caffein.getInstance().getConnection()) {
+                            try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM confession WHERE confession_id = ?")) {
+                                ps.setInt(1,replyId);
+                                try (ResultSet set = ps.executeQuery()) {
 
-                                    long message_id = set.getLong("message_id");
+                                    if (set.next()) {
 
-                                    confessionChannel.retrieveMessageById(message_id).queue(message -> {
+                                        long message_id = set.getLong("message_id");
 
-                                        ThreadChannel threadChannel = message.getStartedThread();
 
-                                        if (threadChannel != null) {
-                                            handle(user, guild, confession_id, replyConfess, threadChannel);
-                                            event.reply("Your reply has sent.").setEphemeral(true).queue();
+                                        ThreadChannel threadChannel = event.getMessage().getChannel().asThreadChannel();
 
-                                        } else message.createThreadChannel("Replied to Confession "+replyId).queue(threadChannel1 -> {
-                                            handle(user, guild, confession_id, replyConfess, threadChannel1);
-                                            event.reply("Your reply has sent.").setEphemeral(true).queue();
+                                        threadChannel.retrieveMessageById(message_id).queue(threadReply -> {
+
+
+                                            Container oldContainer = threadReply.getComponents().getFirst().asContainer();
+                                            List<ContainerChildComponentUnion> newComponent = oldContainer.getComponents().stream().filter(component -> !(component instanceof ActionRow) && !(component instanceof Separator))
+                                                    .toList();
+
+
+                                            Container newContainer = Container.of(newComponent).withAccentColor(oldContainer.getAccentColor());
+
+                                            threadReply.editMessageComponents(newContainer).useComponentsV2().queue(message -> {
+
+                                                Container container = Container.of(
+
+                                                        TextDisplay.of(String.format("### Anonymous Reply (#%d)",getCurrentConfessionId())),
+                                                        TextDisplay.of(replyConfess),
+
+                                                        Separator.createDivider(Separator.Spacing.LARGE),
+                                                        ActionRow.of(
+
+                                                                Button.of(ButtonStyle.SECONDARY,"replyConfess","Reply a Confession")
+
+                                                        )
+
+
+
+                                                );
+
+                                                message.replyComponents(container).useComponentsV2().queue(replyConfessionMessage -> {
+
+                                                    try (Connection con = Caffein.getInstance().getConnection()){
+
+                                                        try (PreparedStatement insertData = con.prepareStatement("INSERT INTO confession (message_id, author_id) VALUES (?,?)")) {
+
+                                                            insertData.setLong(2,replyConfessionMessage.getIdLong());
+                                                            insertData.setLong(3,user.getIdLong());
+                                                            insertData.executeUpdate();
+                                                        }
+
+
+
+                                                    }catch (SQLException e) {
+                                                        log.error("Error on line 185 in Reply Confess Modal",e);
+                                                    }
+
+
+
+                                                });
+
+                                            });
+
+
+
 
 
                                         });
 
-
-                                    },new ErrorHandler().handle(ErrorResponse.UNKNOWN_MESSAGE,e -> event.reply("Cannot retrieve that confession id").setEphemeral(true).queue()));
-
+                                    }else event.reply("Cannot find that confession id!").setEphemeral(true).queue();
 
 
 
-                                }else {
-                                    event.reply("Cannot find that confession id!").setEphemeral(true).queue();
                                 }
 
 
                             }
 
 
+
+                        } catch (SQLException e) {
+                            log.error("Error on thread reply ",e);
+                            event.reply("Something went wrong!").setEphemeral(true).queue();
                         }
 
 
 
-                    } catch (SQLException e) {
-                        log.error("Error on thread reply ",e);
-                        event.reply("Something went wrong!").setEphemeral(true).queue();
+                    }else {
+
+                        try (Connection conn = Caffein.getInstance().getConnection()) {
+
+                            try (PreparedStatement preparedStatement = conn.prepareStatement("SELECT * FROM confession WHERE confession_id = ? ")) {
+                                preparedStatement.setInt(1,replyId);
+
+                                try (ResultSet set = preparedStatement.executeQuery()) {
+
+                                    if (set.next()) {
+
+                                        long messageId = set.getLong("message_id");
+
+                                        confessionChannel.retrieveMessageById(messageId).queue(confessionMessage-> {
+
+                                            ThreadChannel threadChannel = confessionMessage.getStartedThread();
+
+                                            if (threadChannel != null) {
+
+                                                handle(user,guild,confession_id,replyConfess,threadChannel);
+
+
+                                            }else {
+
+                                                confessionMessage.createThreadChannel(String.format("Reply to Confession (#%d)",replyId)).queue(threadChannel1 -> {
+
+                                                    handle(user,guild,confession_id,replyConfess,threadChannel1);
+
+
+                                                });
+
+
+
+
+
+                                            }
+
+
+
+
+                                        });
+
+
+                                    }
+
+
+                                }
+
+
+
+
+                            }
+
+
+                        }catch (SQLException e) {
+                            log.error("Error ",e);
+                        }
+
+
                     }
+
+
                 }catch (NumberFormatException e) {
                     event.reply("You enter a character in the Confession ID ! Try Again!").setEphemeral(true).queue();
                 }
@@ -208,7 +313,7 @@ public class ConfessionModal extends ListenerAdapter {
                 }
 
 
-                sendConfessionToLogs(guild,user,replyConfess,replyMessage.getJumpUrl());
+                sendConfessionToLogs(guild,user,replyConfess,replyMessage.getJumpUrl(),confession_id);
 
 
 
@@ -222,7 +327,7 @@ public class ConfessionModal extends ListenerAdapter {
         });
     }
 
-    private void sendConfessionToLogs(Guild guild, User user, String confession, String jumpURl) {
+    private void sendConfessionToLogs(Guild guild, User user, String confession, String jumpURl,int confession_id) {
 
         if (guild == null) return;
 
@@ -232,7 +337,7 @@ public class ConfessionModal extends ListenerAdapter {
 
 
         MessageEmbed embed = new EmbedBuilder()
-                .setAuthor(user.getName()+"'s Confession",null,user.getAvatarUrl())
+                .setAuthor(user.getName()+"'s Confession #"+confession_id,null,user.getAvatarUrl())
                 .setDescription(confession)
                 .addField("Jump to Confession",jumpURl,false)
                 .setColor(Color.LIGHT_GRAY)
