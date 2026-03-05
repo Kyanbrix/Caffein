@@ -23,18 +23,13 @@ public class CreateRole implements IButton{
 
     @Override
     public String buttonId() {
-        return "feedback";
+        return "create_role";
     }
 
     @Override
     public void accept(ButtonInteractionEvent event) {
 
         List<Long> memberRoles = event.getMember().getRoles().stream().map(Role::getIdLong).toList();
-
-        if (event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
-            event.reply("Only for non-admin").setEphemeral(true).queue();
-            return;
-        }
 
 
         if (!memberRoles.contains(1477694631838875689L) || !memberRoles.contains(1474656723078746155L)) {

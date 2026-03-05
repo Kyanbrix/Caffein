@@ -24,9 +24,6 @@ public class RoleSelectionCommand implements ICommand {
 
         Guild guild = event.getGuild();
 
-        event.getMessage().delete().queue();
-
-
         Container container = Container.of(
 
                 TextDisplay.of("# **"+guild.getName()+"** Roles"),
