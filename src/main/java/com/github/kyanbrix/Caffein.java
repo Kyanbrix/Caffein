@@ -1,7 +1,6 @@
 package com.github.kyanbrix;
 
 import com.github.kyanbrix.component.ConfessionModal;
-import com.github.kyanbrix.component.FeedbackModal;
 import com.github.kyanbrix.component.RoleCreationModal;
 import com.github.kyanbrix.component.StringSelectionComponent;
 import com.github.kyanbrix.component.command.CommandManager;
