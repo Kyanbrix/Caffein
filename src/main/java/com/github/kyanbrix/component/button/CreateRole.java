@@ -38,6 +38,7 @@ public class CreateRole implements IButton{
         }
 
 
+
         // Update Modal
         try (Connection connection = Caffein.getInstance().getConnection()) {
 
