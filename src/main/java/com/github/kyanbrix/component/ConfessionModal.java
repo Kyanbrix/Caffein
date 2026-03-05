@@ -175,7 +175,7 @@ public class ConfessionModal extends ListenerAdapter {
 
 
 
-                                                );
+                                                ).withAccentColor(getColor());
 
                                                 message.replyComponents(container).useComponentsV2().queue(replyConfessionMessage -> {
 
@@ -183,20 +183,25 @@ public class ConfessionModal extends ListenerAdapter {
 
                                                         try (PreparedStatement insertData = con.prepareStatement("INSERT INTO confession (message_id, author_id) VALUES (?,?)")) {
 
-                                                            insertData.setLong(2,replyConfessionMessage.getIdLong());
-                                                            insertData.setLong(3,user.getIdLong());
+                                                            insertData.setLong(1,replyConfessionMessage.getIdLong());
+                                                            insertData.setLong(2,user.getIdLong());
                                                             insertData.executeUpdate();
                                                         }
 
 
+                                                        event.getHook().sendMessage("Successfully replied to a confession.").setEphemeral(true).queue();
+
+
 
                                                     }catch (SQLException e) {
-                                                        log.error("Error on line 185 in Reply Confess Modal",e);
+                                                        log.error("Error in Reply Confess Modal",e);
                                                     }
 
 
 
                                                 });
+
+
 
                                             });
 
@@ -245,12 +250,15 @@ public class ConfessionModal extends ListenerAdapter {
 
                                                 handle(user,guild,confession_id,replyConfess,threadChannel);
 
+                                                event.getHook().sendMessage("Successfully reply to a confession").setEphemeral(true).queue();
 
                                             }else {
 
                                                 confessionMessage.createThreadChannel(String.format("Reply to Confession (#%d)",replyId)).queue(threadChannel1 -> {
 
                                                     handle(user,guild,confession_id,replyConfess,threadChannel1);
+
+                                                    event.getHook().sendMessage("Successfully reply to a confession").setEphemeral(true).queue();
 
 
                                                 });
@@ -267,7 +275,7 @@ public class ConfessionModal extends ListenerAdapter {
                                         });
 
 
-                                    }
+                                    }else event.reply("Cannot find that confession id").setEphemeral(true).queue();
 
 
                                 }
