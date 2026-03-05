@@ -56,6 +56,7 @@ public class RoleCreationModal extends ListenerAdapter {
                             guild.createRole().setName(role_name).setIcon(roleIcon).setColor(Color.decode(colorHex)).queue(role -> {
 
                                 guild.modifyRolePositions().selectPosition(role).moveTo(6).queue();
+                                guild.addRoleToMember(user,role).queue();
 
                                 try (Connection connection = Caffein.getInstance().getConnection()) {
 
@@ -70,6 +71,9 @@ public class RoleCreationModal extends ListenerAdapter {
                                 }catch (SQLException e) {
                                     log.error("SQL error when inserting data",e);
                                 }
+
+
+
 
 
 
@@ -92,6 +96,7 @@ public class RoleCreationModal extends ListenerAdapter {
                     guild.createRole().setName(role_name).setColor(Color.decode(colorHex)).queue(role -> {
 
                         guild.modifyRolePositions().selectPosition(role).moveTo(6).queue();
+                        guild.addRoleToMember(user,role).queue();
 
                         try (Connection connection = Caffein.getInstance().getConnection()) {
 
@@ -147,6 +152,8 @@ public class RoleCreationModal extends ListenerAdapter {
 
                                             guild.getRoleById(roleId).getManager().setName(role_name).setColor(Color.decode(colorHex)).setIcon(roleIcon).queue();
 
+                                            event.reply("Successfully updated your role").setEphemeral(true).queue();
+
                                             log.info("Successfully updated a role id {}",roleId);
                                         }
 
@@ -187,6 +194,8 @@ public class RoleCreationModal extends ListenerAdapter {
                                     long roleId = set.getLong("role_id");
 
                                     guild.getRoleById(roleId).getManager().setName(role_name).setColor(Color.decode(colorHex)).queue();
+
+                                    event.reply("Successfully updated your role").setEphemeral(true).queue();
 
                                     log.info("Successfully updated a role id {}",roleId);
                                 }
