@@ -1,7 +1,6 @@
 package com.github.kyanbrix.component.button;
 
 import com.github.kyanbrix.Caffein;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.components.attachmentupload.AttachmentUpload;
 import net.dv8tion.jda.api.components.label.Label;
 import net.dv8tion.jda.api.components.textinput.TextInput;
