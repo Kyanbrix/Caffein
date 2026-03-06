@@ -1,7 +1,6 @@
 package com.github.kyanbrix.features;
 
 import club.minnced.discord.webhook.WebhookClient;
-import club.minnced.discord.webhook.WebhookClientBuilder;
 import club.minnced.discord.webhook.send.WebhookEmbed;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessage;
@@ -33,62 +32,54 @@ public class ServerMemberHandler extends ListenerAdapter {
     private static final Logger log = LoggerFactory.getLogger(ServerMemberHandler.class);
     private static final long GUILD_ID = 1477920217270194298L;
     private static final long LOG_CHANNEL_ID = 1477920159443456194L;
+    private static final long SERVER_TAG_LOG_ID = 1477920635748352123L;
 
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
-
-
-        
         if (event.getMember().getUser().isBot()) return;
 
         Member member = event.getMember();
         Guild guild = event.getGuild();
 
-        if (guild.getIdLong() == 1357336100514828411L) return;
+        if (guild.getIdLong() != GUILD_ID) return;
 
         TextChannel logChannel = guild.getTextChannelById(LOG_CHANNEL_ID);
 
+        WebhookClient client = WebhookClient.withUrl(System.getenv("WELCOME_WEBHOOK"));
 
-        try (WebhookClient client = WebhookClient.withUrl(System.getenv("WELCOME_WEBHOOK"))) {
+        WebhookEmbed.EmbedAuthor author = new WebhookEmbed.EmbedAuthor("New Member", guild.getIconUrl(), null);
 
-            WebhookEmbed.EmbedAuthor author = new WebhookEmbed.EmbedAuthor("New Member",guild.getIconUrl(),null);
+        WebhookEmbed webhookEmbed = new WebhookEmbedBuilder()
+                .setAuthor(author)
+                .setDescription(String.format("%s has joined the server", member.getAsMention()))
+                .setColor(15316501)
+                .setThumbnailUrl(member.getUser().getAvatarUrl())
+                .build();
 
-            WebhookEmbed webhookEmbed = new WebhookEmbedBuilder()
-                    .setAuthor(author)
-                    .setDescription(String.format("%s has joined the server",member.getAsMention()))
-                    .setColor(15316501)
-                    .setThumbnailUrl(member.getUser().getAvatarUrl())
-                    .build();
+        WebhookMessage webhookMessage = new WebhookMessageBuilder()
+                .setUsername(guild.getName())
+                .setAvatarUrl(guild.getIconUrl())
+                .addEmbeds(webhookEmbed)
+                .build();
 
-            WebhookMessage webhookMessage = new WebhookMessageBuilder()
-                    .setUsername(guild.getName())
-                    .setAvatarUrl(guild.getIconUrl())
-                    .addEmbeds(webhookEmbed)
-                    .build();
-
-            client.send(webhookMessage);
-
-
-
-        }
+        client.send(webhookMessage);
 
         String accountAge = TimeFormat.RELATIVE.format(member.getUser().getTimeCreated());
 
         MessageEmbed embed = new EmbedBuilder()
-                .setAuthor("Member Joined",null,member.getAvatarUrl())
-                .addField("User",String.format("%s (%s)",member.getAsMention(),member.getUser().getName()),false)
-                .addField("Account Created",accountAge,false)
+                .setAuthor("Member Joined", null, member.getAvatarUrl())
+                .addField("User", String.format("%s (%s)", member.getAsMention(), member.getUser().getName()), false)
+                .addField("Account Created", accountAge, false)
                 .setColor(Color.ORANGE)
                 .setThumbnail(member.getUser().getAvatarUrl())
-                .setFooter("User ID: "+member.getId())
+                .setFooter("User ID: " + member.getId())
                 .setTimestamp(Instant.now())
                 .build();
 
-        if (logChannel != null ) logChannel.sendMessageEmbeds(embed).queue();
+        if (logChannel != null) logChannel.sendMessageEmbeds(embed).queue();
         else log.error("Member joined log channel is null");
 
     }
-
 
 
     @Override
@@ -99,17 +90,17 @@ public class ServerMemberHandler extends ListenerAdapter {
         long memberIdLong = event.getUser().getIdLong();
 
         Guild guild = event.getGuild();
-        TextChannel logChannel = guild.getTextChannelById(1477920217270194298L);
+        TextChannel logChannel = guild.getTextChannelById(LOG_CHANNEL_ID);
         User user = event.getUser();
 
         if (logChannel != null) {
 
             MessageEmbed embed = new EmbedBuilder()
-                    .setAuthor("User Left",null,user.getAvatarUrl())
-                    .setDescription(String.format("%s (%s) has left the server",user.getAsMention(),user.getName()))
+                    .setAuthor("User Left", null, user.getAvatarUrl())
+                    .setDescription(String.format("%s (%s) has left the server", user.getAsMention(), user.getName()))
                     .setColor(Color.decode("#FF0000"))
                     .setThumbnail(user.getAvatarUrl())
-                    .setFooter("ID: "+user.getIdLong())
+                    .setFooter("ID: " + user.getIdLong())
                     .build();
 
             logChannel.sendMessageEmbeds(embed).queue();
@@ -123,19 +114,19 @@ public class ServerMemberHandler extends ListenerAdapter {
 
             try (PreparedStatement ps = connection.prepareStatement(deleteUserMessages)) {
 
-                ps.setObject(1,memberIdLong);
+                ps.setObject(1, memberIdLong);
                 ps.executeUpdate();
 
                 try (PreparedStatement ps1 = connection.prepareStatement(deleteFromRegular)) {
 
-                    ps1.setObject(1,memberIdLong);
+                    ps1.setObject(1, memberIdLong);
                     ps1.executeUpdate();
                 }
 
             }
 
-        }catch (SQLException e) {
-            log.error(e.getMessage(),e.fillInStackTrace());
+        } catch (SQLException e) {
+            log.error(e.getMessage(), e.fillInStackTrace());
         }
 
 
@@ -144,65 +135,37 @@ public class ServerMemberHandler extends ListenerAdapter {
 
     @Override
     public void onUserUpdatePrimaryGuild(@NotNull UserUpdatePrimaryGuildEvent event) {
-
-        User.PrimaryGuild primaryGuild = event.getNewPrimaryGuild();
-        User.PrimaryGuild oldGuild = event.getOldPrimaryGuild();
-        User user = event.getUser();
-
         Guild guild = event.getJDA().getGuildById(GUILD_ID);
+        if (guild == null) return;
 
-        TextChannel logChannel = guild.getTextChannelById(1477920635748352123L);
-
-
-
-        EmbedBuilder builder = new EmbedBuilder();
-        builder.setAuthor(user.getName(),null,user.getAvatarUrl());
-        builder.setTimestamp(Instant.now());
-        builder.setColor(Color.decode("#FF4500"));
-
-        //no tag before then added a tag right after
-        if (oldGuild == null && primaryGuild != null) {
-            ;
-            if (primaryGuild.getIdLong() == GUILD_ID) {
-                builder.setDescription(String.format("%s used our server tag",user.getAsMention()));
-            }
-
+        TextChannel logChannel = guild.getTextChannelById(SERVER_TAG_LOG_ID);
+        if (logChannel == null) {
+            log.error("Primary guild log channel is null for guild {}", GUILD_ID);
+            return;
         }
 
-        if (oldGuild != null && primaryGuild != null) {
+        User user = event.getUser();
+        User.PrimaryGuild newGuild = event.getNewPrimaryGuild();
+        User.PrimaryGuild oldGuild = event.getOldPrimaryGuild();
 
-            if (oldGuild.getIdLong() == GUILD_ID && primaryGuild.getIdLong() != GUILD_ID) {
+        EmbedBuilder builder = new EmbedBuilder()
+                .setAuthor(user.getName(), null, user.getAvatarUrl())
+                .setTimestamp(Instant.now());
 
-                builder.setDescription(String.format("%s removed our server tag from their profile",user.getAsMention()));
-                builder.setColor(Color.decode("#FF4500"));
+        boolean hadTag = oldGuild != null && oldGuild.getIdLong() == GUILD_ID;
+        boolean hasTag = newGuild != null && newGuild.getIdLong() == GUILD_ID;
 
-
-            }else if (oldGuild.getIdLong() != GUILD_ID && primaryGuild.getIdLong() == GUILD_ID) {
-
-                builder.setDescription(String.format("%s used our server tag",user.getAsMention()));
-            }
-
-
+        if (hasTag && !hadTag) {
+            builder.setDescription(String.format("%s used our server tag", user.getAsMention()))
+                    .setColor(Color.decode("#FF4500"));
+        } else if (!hasTag && hadTag) {
+            builder.setDescription(String.format("%s removed our server tag from their profile", user.getAsMention()))
+                    .setColor(Color.decode("#FF4500"));
+        } else {
+            return;
         }
-
-        //User has tag before then remove the tag
-        if (oldGuild != null && primaryGuild == null) {
-
-            if (oldGuild.getIdLong() == GUILD_ID) {
-                builder.setDescription(String.format("%s removed our server tag from their profile",user.getAsMention()));
-                builder.setColor(Color.decode("#FF4500"));
-
-            }
-
-        }
-
-
-        if (logChannel == null) return;
 
         logChannel.sendMessageEmbeds(builder.build()).queue();
-
-
-
     }
 
     @Override
@@ -217,7 +180,7 @@ public class ServerMemberHandler extends ListenerAdapter {
             try (Connection connection = Caffein.getInstance().getConnection()) {
 
                 try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM premium_role WHERE user_id = ?")) {
-                    ps.setLong(1,member.getIdLong());
+                    ps.setLong(1, member.getIdLong());
 
                     try (ResultSet set = ps.executeQuery()) {
 
@@ -227,10 +190,10 @@ public class ServerMemberHandler extends ListenerAdapter {
 
                             Role role = guild.getRoleById(roleId);
 
-                            if (role != null) guild.removeRoleFromMember(member,role).queue();
+                            if (role != null) guild.removeRoleFromMember(member, role).queue();
 
                             try (PreparedStatement delete = connection.prepareStatement("DELETE FROM premium_role WHERE user_id = ?")) {
-                                delete.setLong(1,member.getIdLong());
+                                delete.setLong(1, member.getIdLong());
                                 delete.executeUpdate();
 
                                 log.info("Successfully remove a user from premium_role");
@@ -244,18 +207,12 @@ public class ServerMemberHandler extends ListenerAdapter {
 
                 }
 
-            }catch (SQLException e) {
-                log.error("Error on retrieving data from premium_role",e);
+            } catch (SQLException e) {
+                log.error("Error on retrieving data from premium_role", e);
             }
 
 
-
-
-
         }
-
-
-
 
 
     }
