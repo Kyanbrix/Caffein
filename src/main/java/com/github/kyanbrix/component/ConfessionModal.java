@@ -74,23 +74,29 @@ public class ConfessionModal extends ListenerAdapter {
         
         long confessionId = getNextConfessionId();
 
-        event.reply("Your confession has been posted!").setEphemeral(true).queue();
-
         TextChannel channel = event.getGuild().getTextChannelById(CONFESSION_CHANNEL_ID);
         if (channel == null) {
+            event.reply("Something went wrong ").setEphemeral(true).queue();
             log.error("Confession channel not found!");
             return;
         }
 
-        Container container = buildConfessionContainer(confessionId, content, attachments);
-        channel.sendMessageComponents(container).useComponentsV2().queue(message -> {
-            saveConfessionRecord(confessionId, message.getIdLong(), event.getUser().getIdLong());
-            logConfession(event.getGuild(), event.getUser(), content, message.getJumpUrl(), confessionId);
+
+        event.getMessage().editMessageComponents(newContainer(event.getMessage())).flatMap(message -> {
+            Container container = buildConfessionContainer(confessionId, content, attachments);
+
+            return message.getChannel().sendMessageComponents(container).useComponentsV2();
+
+        }).queue(message -> {
+
+            saveConfessionRecord(message.getIdLong(),event.getUser().getIdLong());
+            logConfession(event.getGuild(),event.getUser(),content,message.getJumpUrl(),confessionId);
+
+            event.getHook().sendMessage("Your confession has been posted!").setEphemeral(true).queue();
+
         });
 
-        if (event.getMessage() != null && !isSetupMessage(event.getMessage())) {
-            removeMessageButtons(event.getMessage());
-        }
+
     }
 
     private void handleReplySubmission(ModalInteractionEvent event) {
@@ -100,7 +106,8 @@ public class ConfessionModal extends ListenerAdapter {
         if (replyIdMapping == null || replyContentMapping == null) return;
 
         try {
-            long targetId = Long.parseLong(replyIdMapping.getAsString());
+
+            int targetId = Integer.parseInt(replyIdMapping.getAsString());
             String replyContent = replyContentMapping.getAsString();
             long newId = getNextConfessionId();
 
@@ -110,13 +117,14 @@ public class ConfessionModal extends ListenerAdapter {
                 return;
             }
 
-            event.reply("Successfully replied to the confession.").setEphemeral(true).queue();
 
             if (event.getChannelType().isThread()) {
                 processThreadReply(event, originalMessageId, newId, replyContent);
             } else {
                 processChannelReply(event, originalMessageId, targetId, newId, replyContent);
             }
+
+            event.getHook().sendMessage("Successfully replied to the confession.").setEphemeral(true).queue();
 
         } catch (NumberFormatException e) {
             event.reply("Invalid Confession ID!").setEphemeral(true).queue();
@@ -126,12 +134,16 @@ public class ConfessionModal extends ListenerAdapter {
     private void processThreadReply(ModalInteractionEvent event, long originalMsgId, long nextId, String content) {
         ThreadChannel thread = event.getChannel().asThreadChannel();
         thread.retrieveMessageById(originalMsgId).queue(originalMsg -> {
-            removeMessageButtons(originalMsg);
-            Container container = buildReplyContainer(nextId, content, true);
-            originalMsg.replyComponents(container).useComponentsV2().queue(replyMsg -> {
-                saveConfessionRecord(nextId, replyMsg.getIdLong(), event.getUser().getIdLong());
-                logConfession(event.getGuild(), event.getUser(), content, replyMsg.getJumpUrl(), nextId);
+
+            originalMsg.editMessageComponents(newContainer(originalMsg)).useComponentsV2().flatMap(t -> {
+                Container container = buildReplyContainer(nextId, content);
+
+                return originalMsg.replyComponents(container).useComponentsV2();
+            }).queue(message -> {
+                saveConfessionRecord(message.getIdLong(),event.getUser().getIdLong());
+                logConfession(event.getGuild(),event.getUser(),content,message.getJumpUrl(),nextId);
             });
+
         }, new ErrorHandler().handle(ErrorResponse.UNKNOWN_MESSAGE, e -> sendReplyToThread(thread, event.getUser(), event.getGuild(), nextId, content)));
     }
 
@@ -152,18 +164,17 @@ public class ConfessionModal extends ListenerAdapter {
     }
 
     private void sendReplyToThread(ThreadChannel thread, User user, Guild guild, long id, String content) {
-        thread.sendMessageComponents(buildReplyContainer(id, content, false)).useComponentsV2().queue(msg -> {
-            saveConfessionRecord(id, msg.getIdLong(), user.getIdLong());
+        thread.sendMessageComponents(buildReplyContainer(id, content)).useComponentsV2().queue(msg -> {
+            saveConfessionRecord(msg.getIdLong(), user.getIdLong());
             logConfession(guild, user, content, msg.getJumpUrl(), id);
         });
     }
 
-    private void saveConfessionRecord(long confessionId, long messageId, long authorId) {
+    private void saveConfessionRecord(long messageId, long authorId) {
         try (Connection con = Caffein.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement("INSERT INTO confession (confession_id, message_id, author_id) VALUES (?,?,?)")) {
-            ps.setLong(1, confessionId);
-            ps.setLong(2, messageId);
-            ps.setLong(3, authorId);
+             PreparedStatement ps = con.prepareStatement("INSERT INTO confession (message_id, author_id) VALUES (?,?)")) {
+            ps.setLong(1, messageId);
+            ps.setLong(2, authorId);
             ps.executeUpdate();
         } catch (SQLException e) {
             log.error("Failed to save confession", e);
@@ -173,10 +184,10 @@ public class ConfessionModal extends ListenerAdapter {
     private long getMessageIdByConfessionId(long id) {
         try (Connection con = Caffein.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement("SELECT message_id FROM confession WHERE confession_id = ?")) {
-            ps.setLong(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
+             ps.setLong(1, id);
+             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getLong("message_id");
-            }
+             }
         } catch (SQLException e) {
             log.error("Failed to fetch message ID", e);
         }
@@ -217,23 +228,19 @@ public class ConfessionModal extends ListenerAdapter {
         if (message.getContentRaw().contains("## Create a Confession")) return true;
         if (message.getComponents().isEmpty()) return false;
         
-        Container container = message.getComponents().get(0).asContainer();
+        Container container = message.getComponents().getFirst().asContainer();
         return container.getComponents().stream()
                 .anyMatch(c -> c instanceof TextDisplay && ((TextDisplay) c).getContent().contains("Create a Confession"));
     }
 
-    private void removeMessageButtons(Message message) {
-        if (message == null || message.getComponents().isEmpty()) return;
 
-        Container oldContainer = message.getComponents().get(0).asContainer();
+    private Container newContainer(Message message) {
+        Container oldContainer = message.getComponents().getFirst().asContainer();
         List<ContainerChildComponentUnion> filtered = oldContainer.getComponents().stream()
                 .filter(c -> !(c instanceof ActionRow) && !(c instanceof Separator))
                 .toList();
 
-        if (filtered.size() == oldContainer.getComponents().size()) return;
-
-        Container newContainer = Container.of(filtered).withAccentColor(oldContainer.getAccentColor());
-        message.editMessageComponents(newContainer).useComponentsV2().queue(null, new ErrorHandler().ignore(ErrorResponse.UNKNOWN_MESSAGE));
+        return Container.of(filtered).withAccentColor(oldContainer.getAccentColor());
     }
 
     private Container buildConfessionContainer(long id, String content, List<Message.Attachment> attachments) {
@@ -261,8 +268,8 @@ public class ConfessionModal extends ListenerAdapter {
         }
     }
 
-    private Container buildReplyContainer(long id, String content, boolean small) {
-        String header = small ? "### Anonymous Reply (#%d)" : "## Anonymous Reply (#%d)";
+    private Container buildReplyContainer(long id, String content) {
+        String header = "### Anonymous Reply (#%d)";
         return Container.of(
                 TextDisplay.of(String.format(header, id)),
                 TextDisplay.of(content),
