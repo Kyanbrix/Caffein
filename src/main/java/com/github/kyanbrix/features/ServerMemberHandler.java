@@ -32,6 +32,7 @@ public class ServerMemberHandler extends ListenerAdapter {
     private static final Logger log = LoggerFactory.getLogger(ServerMemberHandler.class);
     private static final long GUILD_ID = 1469324454470353163L;
     private static final long LOG_CHANNEL_ID = 1477920159443456194L;
+    private static final long MEMBER_LEFT_LOG_ID = 1477920217270194298L;
     private static final long SERVER_TAG_LOG_ID = 1477920635748352123L;
 
     @Override
@@ -87,10 +88,8 @@ public class ServerMemberHandler extends ListenerAdapter {
 
         if (event.getUser().isBot()) return;
 
-        long memberIdLong = event.getUser().getIdLong();
-
         Guild guild = event.getGuild();
-        TextChannel logChannel = guild.getTextChannelById(LOG_CHANNEL_ID);
+        TextChannel logChannel = guild.getTextChannelById(MEMBER_LEFT_LOG_ID);
         User user = event.getUser();
 
         if (logChannel != null) {
@@ -104,29 +103,6 @@ public class ServerMemberHandler extends ListenerAdapter {
                     .build();
 
             logChannel.sendMessageEmbeds(embed).queue();
-        }
-
-
-        try (Connection connection = Caffein.getInstance().getConnection()) {
-
-            String deleteUserMessages = "DELETE FROM user_messages WHERE userid = ?";
-            String deleteFromRegular = "DELETE FROM regulars WHERE user_id = ?";
-
-            try (PreparedStatement ps = connection.prepareStatement(deleteUserMessages)) {
-
-                ps.setObject(1, memberIdLong);
-                ps.executeUpdate();
-
-                try (PreparedStatement ps1 = connection.prepareStatement(deleteFromRegular)) {
-
-                    ps1.setObject(1, memberIdLong);
-                    ps1.executeUpdate();
-                }
-
-            }
-
-        } catch (SQLException e) {
-            log.error(e.getMessage(), e.fillInStackTrace());
         }
 
 
