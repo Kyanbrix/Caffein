@@ -32,6 +32,7 @@ public class ServerMemberHandler extends ListenerAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(ServerMemberHandler.class);
     private static final long GUILD_ID = 1477920217270194298L;
+    private static final long LOG_CHANNEL_ID = 1477920159443456194L;
 
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
@@ -45,48 +46,42 @@ public class ServerMemberHandler extends ListenerAdapter {
 
         if (guild.getIdLong() == 1357336100514828411L) return;
 
-        TextChannel logChannel = guild.getTextChannelById(1477920159443456194L);
-
-        WebhookClientBuilder webhookClientBuilder = new WebhookClientBuilder("https://discord.com/api/webhooks/1472353251578876197/CUL1FXmhAPL1XrPKqE8ghULfmd1jJT1KgZprgEUjUbRyrL3AQT0CsniAG_VaY3UfQ8fQ");
-
-        webhookClientBuilder.setThreadFactory(kian -> {
-            Thread thread = new Thread(kian);
-
-            thread.setDaemon(true);
-            thread.setName("Cafe");
-            return thread;
-
-        });
-
-        WebhookClient webhookClient = webhookClientBuilder.build();
-
-        WebhookEmbed.EmbedAuthor author = new WebhookEmbed.EmbedAuthor("New Member",guild.getIconUrl(),null);
-
-        WebhookEmbed webhookEmbed = new WebhookEmbedBuilder()
-                .setAuthor(author)
-                .setDescription(String.format("%s has joined the server",member.getAsMention()))
-                .setColor(15316501)
-                .setThumbnailUrl(member.getUser().getAvatarUrl())
-                .build();
-
-        WebhookMessage webhookMessage = new WebhookMessageBuilder()
-                .setUsername(guild.getName())
-                .setAvatarUrl(guild.getIconUrl())
-                .addEmbeds(webhookEmbed)
-                .build();
+        TextChannel logChannel = guild.getTextChannelById(LOG_CHANNEL_ID);
 
 
-        webhookClient.send(webhookMessage).thenAccept(msg-> System.out.println("New member joined"));
+        try (WebhookClient client = WebhookClient.withUrl(System.getenv("WELCOME_WEBHOOK"))) {
+
+            WebhookEmbed.EmbedAuthor author = new WebhookEmbed.EmbedAuthor("New Member",guild.getIconUrl(),null);
+
+            WebhookEmbed webhookEmbed = new WebhookEmbedBuilder()
+                    .setAuthor(author)
+                    .setDescription(String.format("%s has joined the server",member.getAsMention()))
+                    .setColor(15316501)
+                    .setThumbnailUrl(member.getUser().getAvatarUrl())
+                    .build();
+
+            WebhookMessage webhookMessage = new WebhookMessageBuilder()
+                    .setUsername(guild.getName())
+                    .setAvatarUrl(guild.getIconUrl())
+                    .addEmbeds(webhookEmbed)
+                    .build();
+
+            client.send(webhookMessage);
 
 
-        String timestamp = TimeFormat.RELATIVE.format(member.getUser().getTimeCreated());
+
+        }
+
+        String accountAge = TimeFormat.RELATIVE.format(member.getUser().getTimeCreated());
 
         MessageEmbed embed = new EmbedBuilder()
                 .setAuthor("Member Joined",null,member.getAvatarUrl())
-                .addField("User",String.format("%s (%s)",member.getAsMention(),member.getIdLong()),false)
-                .addField("Account Created",timestamp,false)
+                .addField("User",String.format("%s (%s)",member.getAsMention(),member.getUser().getName()),false)
+                .addField("Account Created",accountAge,false)
                 .setColor(Color.ORANGE)
                 .setThumbnail(member.getUser().getAvatarUrl())
+                .setFooter("User ID: "+member.getId())
+                .setTimestamp(Instant.now())
                 .build();
 
         if (logChannel != null ) logChannel.sendMessageEmbeds(embed).queue();
