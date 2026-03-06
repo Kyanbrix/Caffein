@@ -25,6 +25,9 @@ public class RantMessages extends ListenerAdapter {
 
 
     private static final Logger log = LoggerFactory.getLogger(RantMessages.class);
+    private static final long RANT_CHANNEL_ID = 1477966443600679053L;
+    private static final long RANT_LOG_CHANNEL_ID = 1477965995451748373L;
+    private static final long GUILD_ID = 1469324454470353163L;
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
@@ -34,45 +37,65 @@ public class RantMessages extends ListenerAdapter {
 
             Message message = event.getMessage();
             JDA jda = event.getJDA();
-            Guild guild = jda.getGuildById(1469324454470353163L);
+            Guild guild = jda.getGuildById(GUILD_ID);
 
-            if (guild != null) {
-                TextChannel channel = guild.getTextChannelById(1477966443600679053L);
-
-                if (channel == null) return;
-
-                Container container = Container.of(
-                        TextDisplay.of("## "+message.getContentRaw()),
-                        TextDisplay.of("-# DM this account to create anonymous rant message")
-                );
-
-                channel.sendMessageComponents(container).useComponentsV2().queue(message1 -> {
-                    MessageEmbed logEmbed = new EmbedBuilder()
-                            .setAuthor(message.getAuthor().getName(),null,message.getAuthor().getAvatarUrl())
-                            .setDescription(message.getContentRaw())
-                            .addField("Jump to Message",message1.getJumpUrl(),false)
-                            .setColor(Color.decode("#F5F5DC"))
-                            .setFooter("User ID: "+message.getAuthor().getIdLong())
-                            .setTimestamp(Instant.now())
-                            .build();
-
-                    TextChannel rantLogs = guild.getTextChannelById(1477965995451748373L);
-
-                    if (rantLogs != null) rantLogs.sendMessageEmbeds(logEmbed).queue();
-
-                });
-
-
-
-
-
-
-            }
-
+            if (guild != null) sendRantMessage(message,guild);
 
         }
 
 
 
     }
+
+
+    private void sendRantMessage(Message message, Guild guild) {
+
+        TextChannel channel = guild.getTextChannelById(RANT_CHANNEL_ID);
+
+        if (channel == null) {
+            log.error("Rant channel is null");
+            return;
+        }
+
+
+        try (WebhookClient client = WebhookClient.withUrl(System.getenv("RANT_WEBHOOK"))) {
+
+            WebhookMessage webhookMessage = new WebhookMessageBuilder()
+                    .setAvatarUrl(message.getAuthor().getDefaultAvatarUrl())
+                    .setUsername("Anonymous User")
+                    .setContent(message.getContentRaw())
+                    .build();
+
+            client.send(webhookMessage);
+
+            sendRantLogs(message,guild);
+
+        }catch (Exception e) {
+            log.error("Webhook Error",e);
+        }
+
+    }
+
+    private void sendRantLogs(Message message, Guild guild) {
+
+        TextChannel channel = guild.getTextChannelById(RANT_LOG_CHANNEL_ID);
+
+        if (channel == null) {
+            log.error("Rant log channel is null");
+            return;
+        }
+
+        MessageEmbed embed = new EmbedBuilder()
+                .setAuthor(message.getAuthor().getName() + "("+message.getAuthor().getEffectiveName()+")",null,message.getAuthor().getAvatarUrl())
+                .setDescription(message.getContentRaw())
+                .addField("Jump to Message",message.getJumpUrl(),false)
+                .setColor(Color.decode("#F5F5DC"))
+                .setFooter("User ID: "+message.getAuthor().getIdLong())
+                .setTimestamp(Instant.now())
+                .build();
+
+        channel.sendMessageEmbeds(embed).queue();
+
+    }
+
 }
