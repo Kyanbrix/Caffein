@@ -30,7 +30,7 @@ public class ServerMemberHandler extends ListenerAdapter {
 
 
     private static final Logger log = LoggerFactory.getLogger(ServerMemberHandler.class);
-    private static final long GUILD_ID = 1477920217270194298L;
+    private static final long GUILD_ID = 1469324454470353163L;
     private static final long LOG_CHANNEL_ID = 1477920159443456194L;
     private static final long SERVER_TAG_LOG_ID = 1477920635748352123L;
 
