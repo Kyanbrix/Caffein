@@ -11,9 +11,6 @@ import com.github.kyanbrix.features.ServerMemberHandler;
 import com.github.kyanbrix.features.ServerVoiceLogs;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
@@ -24,8 +21,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.concurrent.Executors;
@@ -141,115 +136,6 @@ public class Caffein {
         } catch (IOException ignored){}
 
         throw new IllegalStateException("No Discord token found. Set DISCORD_TOKEN environment variable.");
-    }
-
-
-    private void checkIfRegularMembersIsInactive() {
-
-
-        try (Connection connection = getConnection()) {
-
-            try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM regulars")) {
-
-                try (ResultSet set = ps.executeQuery()) {
-
-                    while (set.next()) {
-
-                        int total_message = set.getInt("total_message");
-                        long userId = set.getLong("user_id");
-
-                        if (total_message < 50) {
-                            Guild guild = getJda().getGuildById(1469324454470353163L);
-
-                            if (guild != null) {
-                                Role role = guild.getRoleById(1475742792092487851L);
-
-                                if (role != null) guild.removeRoleFromMember(UserSnowflake.fromId(userId),role).queue();
-                                else log.error("Regular role is null, probably got deleted!");
-
-                            }
-
-                        }
-
-
-                    }
-
-                }
-
-            }
-
-        }catch (SQLException e) {
-            log.error(e.getMessage());
-        }
-
-    }
-
-
-    private void checkIfMemberIsGoingToRegular() {
-
-
-        try (Connection connection = getConnection()) {
-
-            try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM user_messages")) {
-
-                try (ResultSet set = ps.executeQuery()) {
-
-                    while (set.next()) {
-
-                        int total_message = set.getInt("total_message");
-                        long userId = set.getLong("userid");
-
-                        if (total_message >= 50) {
-
-
-
-                        }
-
-                    }
-
-
-                }
-
-
-            }
-
-
-
-        }catch (SQLException e) {
-            log.error(e.getMessage());
-        }
-
-
-
-    }
-
-    private void resetMessages() {
-
-        //per day
-
-        try (Connection connection = getConnection()) {
-
-            try (PreparedStatement ps = connection.prepareStatement("UPDATE user_messages SET total_messages = ?")) {
-                ps.setObject(1,0);
-                ps.executeUpdate();
-
-                log.info("All user_messages table has been updated its total messages to 0");
-
-            }
-
-
-        }catch (SQLException e) {
-
-            log.error(e.getMessage(),e.fillInStackTrace());
-
-        }
-
-
-
-
-
-
-
     }
 
 
