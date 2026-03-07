@@ -71,7 +71,7 @@ public class ConfessionModal extends ListenerAdapter {
         String content = contentMapping.getAsString();
         ModalMapping attachmentMapping = event.getValue("attachment-upload");
         List<Message.Attachment> attachments = attachmentMapping != null ? attachmentMapping.getAsAttachmentList() : List.of();
-        
+
         long confessionId = getNextConfessionId();
 
         TextChannel channel = event.getGuild().getTextChannelById(CONFESSION_CHANNEL_ID);
@@ -81,6 +81,7 @@ public class ConfessionModal extends ListenerAdapter {
             return;
         }
 
+        event.reply("Your confession has been sent!").setEphemeral(true).queue();
 
         event.getMessage().editMessageComponents(newContainer(event.getMessage())).useComponentsV2().flatMap(message -> {
             Container container = buildConfessionContainer(confessionId, content, attachments);
@@ -92,8 +93,6 @@ public class ConfessionModal extends ListenerAdapter {
             saveConfessionRecord(message.getIdLong(),event.getUser().getIdLong());
             logConfession(event.getGuild(),event.getUser(),content,message.getJumpUrl(),confessionId);
 
-            event.getHook().sendMessage("Your confession has been posted!").setEphemeral(true).queue();
-
         });
 
 
@@ -102,7 +101,7 @@ public class ConfessionModal extends ListenerAdapter {
     private void handleReplySubmission(ModalInteractionEvent event) {
         ModalMapping replyIdMapping = event.getValue("replyId");
         ModalMapping replyContentMapping = event.getValue("replyConfess");
-        
+
         if (replyIdMapping == null || replyContentMapping == null) return;
 
         try {
@@ -124,7 +123,6 @@ public class ConfessionModal extends ListenerAdapter {
                 processChannelReply(event, originalMessageId, targetId, newId, replyContent);
             }
 
-            event.getHook().sendMessage("Successfully replied to the confession.").setEphemeral(true).queue();
 
         } catch (NumberFormatException e) {
             event.reply("Invalid Confession ID!").setEphemeral(true).queue();
@@ -133,6 +131,7 @@ public class ConfessionModal extends ListenerAdapter {
 
     private void processThreadReply(ModalInteractionEvent event, long originalMsgId, long nextId, String content) {
         ThreadChannel thread = event.getChannel().asThreadChannel();
+        event.reply("You reply confession has been sent!").setEphemeral(true).queue();
         thread.retrieveMessageById(originalMsgId).queue(originalMsg -> {
 
             originalMsg.editMessageComponents(newContainer(originalMsg)).useComponentsV2().flatMap(t -> {
@@ -147,9 +146,12 @@ public class ConfessionModal extends ListenerAdapter {
         }, new ErrorHandler().handle(ErrorResponse.UNKNOWN_MESSAGE, e -> sendReplyToThread(thread, event.getUser(), event.getGuild(), nextId, content)));
     }
 
+
     private void processChannelReply(ModalInteractionEvent event, long originalMsgId, long targetId, long nextId, String content) {
         TextChannel channel = event.getGuild().getTextChannelById(CONFESSION_CHANNEL_ID);
         if (channel == null) return;
+
+        event.reply("Confession Reply has been sent!").setEphemeral(true).queue();
 
         channel.retrieveMessageById(originalMsgId).queue(message -> {
             ThreadChannel thread = message.getStartedThread();
@@ -204,7 +206,6 @@ public class ConfessionModal extends ListenerAdapter {
         }
         return 1;
     }
-
 
     private void logConfession(Guild guild, User user, String content, String jumpUrl, long id) {
         if (guild == null) return;
