@@ -82,7 +82,7 @@ public class ConfessionModal extends ListenerAdapter {
         }
 
 
-        event.getMessage().editMessageComponents(newContainer(event.getMessage())).flatMap(message -> {
+        event.getMessage().editMessageComponents(newContainer(event.getMessage())).useComponentsV2().flatMap(message -> {
             Container container = buildConfessionContainer(confessionId, content, attachments);
 
             return message.getChannel().sendMessageComponents(container).useComponentsV2();
