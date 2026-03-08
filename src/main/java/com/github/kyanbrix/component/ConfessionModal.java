@@ -2,6 +2,7 @@ package com.github.kyanbrix.component;
 
 import com.github.kyanbrix.Caffein;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.buttons.ButtonStyle;
@@ -19,10 +20,10 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
+import net.dv8tion.jda.api.exceptions.ErrorHandler;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.modals.ModalMapping;
 import net.dv8tion.jda.api.requests.ErrorResponse;
-import net.dv8tion.jda.api.exceptions.ErrorHandler;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,17 +112,17 @@ public class ConfessionModal extends ListenerAdapter {
             long newId = getNextConfessionId();
 
             long originalMessageId = getMessageIdByConfessionId(targetId);
+
+
             if (originalMessageId == 0) {
                 event.reply("Could not find a confession with ID #" + targetId).setEphemeral(true).queue();
                 return;
             }
 
 
-            if (event.getChannelType().isThread()) {
-                processThreadReply(event, originalMessageId, newId, replyContent);
-            } else {
-                processChannelReply(event, originalMessageId, targetId, newId, replyContent);
-            }
+            if (event.getChannelType().isThread()) processThreadReply(event, originalMessageId, newId, replyContent);
+            else processChannelReply(event, originalMessageId, targetId, newId, replyContent);
+
 
 
         } catch (NumberFormatException e) {
@@ -156,17 +157,27 @@ public class ConfessionModal extends ListenerAdapter {
         channel.retrieveMessageById(originalMsgId).queue(message -> {
             ThreadChannel thread = message.getStartedThread();
             if (thread == null) {
-                message.createThreadChannel("Reply to Confession (#" + targetId + ")").queue(newThread -> 
-                        sendReplyToThread(newThread, event.getUser(), event.getGuild(), nextId, content)
-                );
+                message.createThreadChannel("Reply to Confession (#" + targetId + ")").queue(newThread -> {
+
+                    newThread.sendMessageComponents(buildReplyContainer(nextId,content)).useComponentsV2().queue(msg-> {
+
+                        logConfession(event.getGuild(),event.getUser(),content,msg.getJumpUrl(),nextId);
+
+                        sendDm(targetId,nextId,event.getJDA(),msg,content);
+
+                    });
+
+                });
             } else {
-                sendReplyToThread(thread, event.getUser(), event.getGuild(), nextId, content);
+                thread.sendMessageComponents(buildReplyContainer(nextId,content)).useComponentsV2()
+                        .queue(msg -> sendDm(targetId,nextId,event.getJDA(),msg,content));
             }
         });
     }
 
     private void sendReplyToThread(ThreadChannel thread, User user, Guild guild, long id, String content) {
         thread.sendMessageComponents(buildReplyContainer(id, content)).useComponentsV2().queue(msg -> {
+
             saveConfessionRecord(msg.getIdLong(), user.getIdLong());
             logConfession(guild, user, content, msg.getJumpUrl(), id);
         });
@@ -224,17 +235,6 @@ public class ConfessionModal extends ListenerAdapter {
         logChannel.sendMessageEmbeds(embed).queue();
     }
 
-    private boolean isSetupMessage(Message message) {
-        if (message == null) return false;
-        if (message.getContentRaw().contains("## Create a Confession")) return true;
-        if (message.getComponents().isEmpty()) return false;
-        
-        Container container = message.getComponents().getFirst().asContainer();
-        return container.getComponents().stream()
-                .anyMatch(c -> c instanceof TextDisplay && ((TextDisplay) c).getContent().contains("Create a Confession"));
-    }
-
-
     private Container newContainer(Message message) {
         Container oldContainer = message.getComponents().getFirst().asContainer();
         List<ContainerChildComponentUnion> filtered = oldContainer.getComponents().stream()
@@ -282,4 +282,53 @@ public class ConfessionModal extends ListenerAdapter {
     private Color getRandomColor() {
         return Color.decode(COLORS[RANDOM.nextInt(COLORS.length)]);
     }
+
+    private void sendDm(long targetId, long nextId,JDA jda, Message message, String confessMessage) {
+
+        long author_id = getAuthorIdByConfessionId(targetId);
+
+        if (author_id == 0) return;
+
+        MessageEmbed embed = new EmbedBuilder()
+                .setDescription(confessMessage)
+                .setTitle("Anonymous Reply (#" + nextId +") ")
+                .setColor(Color.green)
+                .setTimestamp(Instant.now())
+                .build();
+
+
+        jda.retrieveUserById(author_id).flatMap(user -> user.openPrivateChannel().flatMap(dm -> dm.sendMessageFormat("Someone replied to your confession (#%d): %s",targetId,message.getJumpUrl()).addEmbeds(embed)))
+                .queue(null,new ErrorHandler().handle(ErrorResponse.CANNOT_SEND_TO_USER,e -> System.out.println("User disabled their dms")));
+
+
+    }
+
+
+    private long getAuthorIdByConfessionId(final long confessionReplyId) {
+
+        try (Connection connection = Caffein.getInstance().getConnection()){
+
+            try (PreparedStatement query = connection.prepareStatement("SELECT author_id FROM confession WHERE confession_id = ?")) {
+                query.setLong(1,confessionReplyId);
+                try (ResultSet set = query.executeQuery()) {
+
+                    if (set.next()) {
+
+                        return set.getLong("author_id");
+                    }
+
+                }
+
+            }
+
+
+        }catch (SQLException e) {
+            log.error("Error on retrieving author id",e);
+        }
+
+
+        return 0;
+    }
+
+
 }
