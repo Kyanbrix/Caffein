@@ -51,7 +51,7 @@ public class CreateRole implements IButton{
 
                         Modal updateRoleModal = Modal.create("updateRole","Update My Role")
                                 .addComponents(Label.of("New Role Name",
-                                                TextInput.create("new_role_name",TextInputStyle.SHORT).setMinLength(2).setMaxLength(10).setRequired(true)
+                                                TextInput.create("new_role_name",TextInputStyle.SHORT).setMinLength(2).setMaxLength(30).setRequired(true)
                                                         .build()
                                         ),
 
