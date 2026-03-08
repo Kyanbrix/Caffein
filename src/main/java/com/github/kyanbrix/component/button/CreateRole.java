@@ -51,7 +51,7 @@ public class CreateRole implements IButton{
 
                         Modal updateRoleModal = Modal.create("updateRole","Update My Role")
                                 .addComponents(Label.of("New Role Name",
-                                                TextInput.create("new_role_name",TextInputStyle.SHORT).setMinLength(2).setMaxLength(10).setRequired(true)
+                                                TextInput.create("new_role_name",TextInputStyle.SHORT).setMinLength(2).setMaxLength(30).setRequired(true)
                                                         .build()
                                         ),
 
@@ -71,7 +71,8 @@ public class CreateRole implements IButton{
                     } else {
                         Modal modal =  Modal.create("createRole","Create Role")
                                 .addComponents(Label.of("Role Name",
-                                                TextInput.create("role_name",TextInputStyle.SHORT).setMinLength(2).setMaxLength(10).setRequired(true)
+                                TextInput.create("role_name", TextInputStyle.SHORT).setMinLength(2).setMaxLength(30)
+                                    .setRequired(true)
                                                         .build()
                                         ),
 
