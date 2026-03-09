@@ -5,10 +5,11 @@ import com.github.kyanbrix.component.RoleCreationModal;
 import com.github.kyanbrix.component.StringSelectionComponent;
 import com.github.kyanbrix.component.command.CommandManager;
 import com.github.kyanbrix.database.ConnectionPool;
-import com.github.kyanbrix.features.InviteTracker;
 import com.github.kyanbrix.features.Assistant;
+import com.github.kyanbrix.features.InviteTracker;
 import com.github.kyanbrix.features.ServerMemberHandler;
 import com.github.kyanbrix.features.ServerVoiceLogs;
+import com.sun.net.httpserver.HttpsServer;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -20,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -33,15 +36,6 @@ public class Caffein {
     private JDA jda;
     private ConnectionPool connectionPool;
     private final ScheduledExecutorService service = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
-
-
-    public ConnectionPool getConnectionPool() {
-        return connectionPool;
-    }
-
-    public ScheduledExecutorService getService() {
-        return service;
-    }
 
     public JDA getJda() {
         return jda;
@@ -107,6 +101,9 @@ public class Caffein {
                 .build().awaitReady();
 
 
+        webServer();
+
+
 
     }
 
@@ -136,6 +133,38 @@ public class Caffein {
         } catch (IOException ignored){}
 
         throw new IllegalStateException("No Discord token found. Set DISCORD_TOKEN environment variable.");
+    }
+
+    private void webServer() {
+
+        try {
+            int port = 8080;
+
+            HttpsServer httpsServer = HttpsServer.create(new InetSocketAddress(port),0);
+
+            httpsServer.createContext("/",httpExchange -> {
+
+                String response = "Bot is Running";
+                httpExchange.sendResponseHeaders(200,response.length());
+
+                try (OutputStream outputStream = httpExchange.getResponseBody()) {
+                    outputStream.write(response.getBytes());
+
+                }
+
+            });
+
+            httpsServer.setExecutor(null);
+            httpsServer.start();
+
+            log.info("Dummy Server is started on port {}", port);
+
+        }catch (IOException e) {
+
+            log.error("Failed to start a dummy server",e);
+        }
+
+
     }
 
 
