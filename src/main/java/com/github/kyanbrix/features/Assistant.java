@@ -1,29 +1,21 @@
 package com.github.kyanbrix.features;
 
-import club.minnced.discord.webhook.WebhookClient;
-import club.minnced.discord.webhook.send.WebhookMessage;
-import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import com.google.genai.Chat;
 import com.google.genai.Client;
 import com.google.genai.types.*;
-import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageType;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.utils.TimeFormat;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
 import java.io.InputStream;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,9 +27,6 @@ public class Assistant extends ListenerAdapter {
 
 
     private static final Logger log = LoggerFactory.getLogger(Assistant.class);
-    private static final long RANT_CHANNEL_ID = 1477966443600679053L;
-    private static final long RANT_LOG_CHANNEL_ID = 1477965995451748373L;
-    private static final long GUILD_ID = 1469324454470353163L;
 
     private final Client geminiClient = new Client();
 
