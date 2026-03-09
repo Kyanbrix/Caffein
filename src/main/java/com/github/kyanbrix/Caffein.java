@@ -9,6 +9,7 @@ import com.github.kyanbrix.features.Assistant;
 import com.github.kyanbrix.features.InviteTracker;
 import com.github.kyanbrix.features.ServerMemberHandler;
 import com.github.kyanbrix.features.ServerVoiceLogs;
+import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsServer;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -68,6 +69,8 @@ public class Caffein {
     public void start() throws IOException, InterruptedException {
         this.connectionPool = new ConnectionPool();
 
+        webServer();
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             service.shutdown();
 
@@ -99,10 +102,6 @@ public class Caffein {
                 .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new Assistant(), new ServerVoiceLogs(), new ConfessionModal(), new RoleCreationModal())
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
-
-
-        webServer();
-
 
 
     }
@@ -138,9 +137,10 @@ public class Caffein {
     private void webServer() {
 
         try {
-            int port = 8080;
+            String portEnv = System.getenv("PORT");
+            int port = (portEnv != null) ? Integer.parseInt(portEnv) : 8080;
 
-            HttpsServer httpsServer = HttpsServer.create(new InetSocketAddress(port),0);
+            HttpServer httpsServer = HttpsServer.create(new InetSocketAddress(port),0);
 
             httpsServer.createContext("/",httpExchange -> {
 
