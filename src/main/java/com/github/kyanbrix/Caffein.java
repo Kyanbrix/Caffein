@@ -9,8 +9,6 @@ import com.github.kyanbrix.features.Assistant;
 import com.github.kyanbrix.features.InviteTracker;
 import com.github.kyanbrix.features.ServerMemberHandler;
 import com.github.kyanbrix.features.ServerVoiceLogs;
-import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpsServer;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -19,14 +17,8 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -66,10 +58,8 @@ public class Caffein {
 
 
 
-    public void start() throws IOException, InterruptedException {
+    public void start() throws InterruptedException {
         this.connectionPool = new ConnectionPool();
-
-        webServer();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             service.shutdown();
@@ -85,7 +75,7 @@ public class Caffein {
         }, "Caffeine-Bot-ShutdownHook"));
 
         jda = JDABuilder.create(
-                        getToken(),
+                        System.getenv("DISCORD_TOKEN"),
                         GatewayIntent.MESSAGE_CONTENT,
                         GatewayIntent.GUILD_MESSAGES,
                         GatewayIntent.GUILD_PRESENCES,
@@ -106,66 +96,6 @@ public class Caffein {
 
     }
 
-    private String getToken() throws IOException {
-        String tokenFromEnv = System.getenv("DISCORD_TOKEN");
-        if (tokenFromEnv != null && !tokenFromEnv.isBlank()) {
-            return tokenFromEnv;
-        }
-
-        Properties properties = new Properties();
-        try (InputStream input = Caffein.class.getClassLoader().getResourceAsStream("config.properties")) {
-            if (input != null) {
-                properties.load(input);
-                String tokenFromResource = properties.getProperty("token");
-                if (tokenFromResource != null && !tokenFromResource.isBlank()) {
-                    return tokenFromResource;
-                }
-            }
-        }
-
-        try (FileInputStream input = new FileInputStream("config.properties")) {
-            properties.load(input);
-            String tokenFromFile = properties.getProperty("token");
-            if (tokenFromFile != null && !tokenFromFile.isBlank()) {
-                return tokenFromFile;
-            }
-        } catch (IOException ignored){}
-
-        throw new IllegalStateException("No Discord token found. Set DISCORD_TOKEN environment variable.");
-    }
-
-    private void webServer() {
-
-        try {
-            String portEnv = System.getenv("PORT");
-            int port = (portEnv != null) ? Integer.parseInt(portEnv) : 8080;
-
-            HttpServer httpsServer = HttpsServer.create(new InetSocketAddress(port),0);
-
-            httpsServer.createContext("/",httpExchange -> {
-
-                String response = "Bot is Running";
-                httpExchange.sendResponseHeaders(200,response.length());
-
-                try (OutputStream outputStream = httpExchange.getResponseBody()) {
-                    outputStream.write(response.getBytes());
-
-                }
-
-            });
-
-            httpsServer.setExecutor(null);
-            httpsServer.start();
-
-            log.info("Dummy Server is started on port {}", port);
-
-        }catch (IOException e) {
-
-            log.error("Failed to start a dummy server",e);
-        }
-
-
-    }
 
 
 }
