@@ -1,20 +1,28 @@
-FROM maven:3.9.11-eclipse-temurin-21 AS build
+# Stage 1: Build the bot using the official Maven image
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
+
 WORKDIR /app
 
+# Copy ONLY the pom.xml first to cache dependencies
 COPY pom.xml .
+
+# Download dependencies (no wrapper needed!)
+RUN mvn dependency:go-offline
+
+# Copy the actual code
 COPY src ./src
 
-RUN mvn -B -DskipTests package
+# Build the fat jar
+RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-alpine AS runner
+
 WORKDIR /app
 
-COPY --from=build /app/target/cafe.jar /app/cafe.jar
+RUN addgroup -S botgroup && adduser -S botuser -G botgroup
 
-# Railway should provide this in environment variables.
-ENV DISCORD_TOKEN=""
-ENV DB_PASSWORD=""
-ENV DB_URL=""
-ENV DB_USER=""
+COPY --from=builder --chown=botuser:botgroup /app/target/Caffeine.jar ./bot.jar
 
-CMD ["java", "-jar", "/app/cafe.jar"]
+USER botuser
+
+CMD ["java", "-jar", "bot.jar"]
