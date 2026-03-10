@@ -1,0 +1,16 @@
+services:
+  discord-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: caffeine
+    restart: unless-stopped
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - WELCOME_WEBHOOK=${WELCOME_WEBHOOK}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASS}
+      - DB_URL=${DB_URL}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+
+
