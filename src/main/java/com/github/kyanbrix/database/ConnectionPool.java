@@ -1,32 +1,25 @@
 package com.github.kyanbrix.database;
 
-import com.github.kyanbrix.Caffein;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Properties;
 
 public class ConnectionPool {
 
     private final HikariDataSource dataSource;
 
-    public ConnectionPool() throws IOException {
-        String dbUrl = requireEnv("DB_URL");
-        String dbUser = requireEnv("DB_USER");
-        String dbPassword = requireEnv("DB_PASSWORD");
+    public ConnectionPool() {
+
 
         HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setUsername(dbUser);
-        hikariConfig.setPassword(dbPassword);
-        hikariConfig.setJdbcUrl(dbUrl);
+        hikariConfig.setUsername(System.getenv("DB_USER"));
+        hikariConfig.setPassword(System.getenv("DB_PASSWORD"));
+        hikariConfig.setJdbcUrl(System.getenv("DB_URL"));
         hikariConfig.setSchema("public");
         hikariConfig.setIdleTimeout(60000);
-        hikariConfig.setMaxLifetime(1800000);
-        hikariConfig.setMinimumIdle(0);
+        hikariConfig.setMinimumIdle(1);
         hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
         hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
@@ -41,27 +34,6 @@ public class ConnectionPool {
 
     public void close() {
         dataSource.close();
-    }
-
-    private static String requireEnv(String key) throws IOException{
-
-        Properties properties = new Properties();
-        try (InputStream input = Caffein.class.getClassLoader().getResourceAsStream("config.properties")) {
-            if (input != null) {
-                properties.load(input);
-                String keyFromResource = properties.getProperty(key);
-                if (keyFromResource != null && !keyFromResource.isBlank()) {
-                    return keyFromResource;
-                }
-            }
-        }
-
-
-        String value = System.getenv(key);
-        if (value == null || value.isBlank()) {
-            throw new IllegalStateException("Missing required environment variable: " + key);
-        }
-        return value;
     }
 
 }

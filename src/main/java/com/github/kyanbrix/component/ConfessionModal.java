@@ -1,6 +1,7 @@
 package com.github.kyanbrix.component;
 
 import com.github.kyanbrix.Caffein;
+import com.github.kyanbrix.utils.Constant;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
@@ -44,9 +45,6 @@ public class ConfessionModal extends ListenerAdapter {
     private static final String REPLY_MODAL_ID = "replyConfession";
     private static final Logger log = LoggerFactory.getLogger(ConfessionModal.class);
 
-    private static final long CONFESSION_CHANNEL_LOG_ID = 1478673936534470666L;
-    private static final long CONFESSION_CHANNEL_ID = 1479100844715675648L;
-
     private static final Random RANDOM = new Random();
     private static final String[] COLORS = {
             "#FAEBD7", "#F0F8FF", "#00FFFF", "#7FFF00", "#000000", "#F5F5DC", "#0000FF", "#DEB887",
@@ -69,13 +67,16 @@ public class ConfessionModal extends ListenerAdapter {
         ModalMapping contentMapping = event.getValue("confess");
         if (contentMapping == null) return;
 
+
+
+
         String content = contentMapping.getAsString();
         ModalMapping attachmentMapping = event.getValue("attachment-upload");
         List<Message.Attachment> attachments = attachmentMapping != null ? attachmentMapping.getAsAttachmentList() : List.of();
 
         long confessionId = getNextConfessionId();
 
-        TextChannel channel = event.getGuild().getTextChannelById(CONFESSION_CHANNEL_ID);
+        TextChannel channel = event.getJDA().getTextChannelById(Constant.CONFESSION_LOG_ID);
         if (channel == null) {
             event.reply("Something went wrong ").setEphemeral(true).queue();
             log.error("Confession channel not found!");
@@ -92,7 +93,7 @@ public class ConfessionModal extends ListenerAdapter {
         }).queue(message -> {
 
             saveConfessionRecord(message.getIdLong(),event.getUser().getIdLong());
-            logConfession(event.getGuild(),event.getUser(),content,message.getJumpUrl(),confessionId);
+            logConfession(event.getJDA(),event.getUser(),content,message.getJumpUrl(),confessionId);
 
         });
 
@@ -119,9 +120,33 @@ public class ConfessionModal extends ListenerAdapter {
                 return;
             }
 
+            event.editComponents(newContainer(event.getMessage())).useComponentsV2().queue();
 
-            if (event.getChannelType().isThread()) processThreadReply(event, originalMessageId, newId, replyContent);
-            else processChannelReply(event, originalMessageId, targetId, newId, replyContent);
+            if (event.getChannelType().isThread()) {
+                ThreadChannel thread = event.getChannel().asThreadChannel();
+
+
+                thread.retrieveMessageById(originalMessageId).queue(threadMessage -> threadMessage.replyComponents(buildReplyContainer(newId,replyContent)).useComponentsV2()
+                        .queue(message -> logConfession(event.getJDA(),event.getUser(),replyContent,message.getJumpUrl(),newId)));
+
+            } else {
+                event.getChannel().retrieveMessageById(originalMessageId).queue();
+
+                TextChannel confessionChannel = event.getJDA().getTextChannelById(Constant.CONFESSION_CHANNEL_ID);
+
+                if (confessionChannel == null) return;
+
+                confessionChannel.retrieveMessageById(originalMessageId).queue(confessionMessage -> {
+
+
+
+                });
+
+
+            }
+
+
+
 
 
 
@@ -130,29 +155,12 @@ public class ConfessionModal extends ListenerAdapter {
         }
     }
 
-    private void processThreadReply(ModalInteractionEvent event, long originalMsgId, long nextId, String content) {
-        ThreadChannel thread = event.getChannel().asThreadChannel();
-        event.reply("You reply confession has been sent!").setEphemeral(true).queue();
-        thread.retrieveMessageById(originalMsgId).queue(originalMsg -> {
-
-            originalMsg.editMessageComponents(newContainer(originalMsg)).useComponentsV2().flatMap(t -> {
-                Container container = buildReplyContainer(nextId, content);
-
-                return originalMsg.replyComponents(container).useComponentsV2();
-            }).queue(message -> {
-                saveConfessionRecord(message.getIdLong(),event.getUser().getIdLong());
-                logConfession(event.getGuild(),event.getUser(),content,message.getJumpUrl(),nextId);
-            });
-
-        }, new ErrorHandler().handle(ErrorResponse.UNKNOWN_MESSAGE, e -> sendReplyToThread(thread, event.getUser(), event.getGuild(), nextId, content)));
-    }
-
 
     private void processChannelReply(ModalInteractionEvent event, long originalMsgId, long targetId, long nextId, String content) {
-        TextChannel channel = event.getGuild().getTextChannelById(CONFESSION_CHANNEL_ID);
+        TextChannel channel = event.getGuild().getTextChannelById(Constant.CONFESSION_LOG_ID);
         if (channel == null) return;
 
-        event.reply("Confession Reply has been sent!").setEphemeral(true).queue();
+        event.getHook().sendMessage("Confession Reply has been sent!").setEphemeral(true).queue();
 
         channel.retrieveMessageById(originalMsgId).queue(message -> {
             ThreadChannel thread = message.getStartedThread();
@@ -161,9 +169,10 @@ public class ConfessionModal extends ListenerAdapter {
 
                     newThread.sendMessageComponents(buildReplyContainer(nextId,content)).useComponentsV2().queue(msg-> {
 
-                        logConfession(event.getGuild(),event.getUser(),content,msg.getJumpUrl(),nextId);
+                        logConfession(event.getJDA(),event.getUser(),content,msg.getJumpUrl(),nextId);
 
                         sendDm(targetId,nextId,event.getJDA(),msg,content);
+
 
                     });
 
@@ -175,11 +184,11 @@ public class ConfessionModal extends ListenerAdapter {
         });
     }
 
-    private void sendReplyToThread(ThreadChannel thread, User user, Guild guild, long id, String content) {
+    private void sendReplyToThread(ThreadChannel thread, User user, JDA jda, long id, String content) {
         thread.sendMessageComponents(buildReplyContainer(id, content)).useComponentsV2().queue(msg -> {
 
             saveConfessionRecord(msg.getIdLong(), user.getIdLong());
-            logConfession(guild, user, content, msg.getJumpUrl(), id);
+            logConfession(jda, user, content, msg.getJumpUrl(), id);
         });
     }
 
@@ -218,10 +227,13 @@ public class ConfessionModal extends ListenerAdapter {
         return 1;
     }
 
-    private void logConfession(Guild guild, User user, String content, String jumpUrl, long id) {
-        if (guild == null) return;
-        TextChannel logChannel = guild.getTextChannelById(CONFESSION_CHANNEL_LOG_ID);
-        if (logChannel == null) return;
+    private void logConfession(JDA jda, User user, String content, String jumpUrl, long id) {
+        TextChannel logChannel = jda.getTextChannelById(Constant.CONFESSION_LOG_ID);
+
+        if (logChannel == null) {
+            log.error("Log channel for confession is null");
+            return;
+        }
 
         MessageEmbed embed = new EmbedBuilder()
                 .setAuthor(user.getName() + "'s Confession #" + id, null, user.getAvatarUrl())
@@ -287,7 +299,10 @@ public class ConfessionModal extends ListenerAdapter {
 
         long author_id = getAuthorIdByConfessionId(targetId);
 
-        if (author_id == 0) return;
+        if (author_id == 0) {
+            log.error("Author id cannot be found!");
+            return;
+        }
 
         MessageEmbed embed = new EmbedBuilder()
                 .setDescription(confessMessage)
@@ -297,26 +312,23 @@ public class ConfessionModal extends ListenerAdapter {
                 .build();
 
 
-        jda.retrieveUserById(author_id).flatMap(user -> user.openPrivateChannel().flatMap(dm -> dm.sendMessageFormat("Someone replied to your confession (#%d): %s",targetId,message.getJumpUrl()).addEmbeds(embed)))
-                .queue(null,new ErrorHandler().handle(ErrorResponse.CANNOT_SEND_TO_USER,e -> System.out.println("User disabled their dms")));
-
+        jda.retrieveUserById(author_id).queue(user -> user.openPrivateChannel()
+                .flatMap(privateChannel -> privateChannel.sendMessageFormat("Someone replied to your confession (#%d): %s",targetId,message.getJumpUrl()).addEmbeds(embed))
+                .queue(),new ErrorHandler().handle(ErrorResponse.UNKNOWN_USER, e -> log.error("Cannot Dm a replied confession because it's null!")));
 
     }
 
-
     private long getAuthorIdByConfessionId(final long confessionReplyId) {
 
-        try (Connection connection = Caffein.getInstance().getConnection()){
+        try (Connection connection = Caffein.getInstance().getConnection();
+             PreparedStatement query = connection.prepareStatement("SELECT author_id FROM confession WHERE confession_id = ?")){
+            query.setLong(1,confessionReplyId);
 
-            try (PreparedStatement query = connection.prepareStatement("SELECT author_id FROM confession WHERE confession_id = ?")) {
-                query.setLong(1,confessionReplyId);
-                try (ResultSet set = query.executeQuery()) {
+            try (ResultSet set = query.executeQuery()) {
 
-                    if (set.next()) {
+                if (set.next()) {
 
-                        return set.getLong("author_id");
-                    }
-
+                    return set.getLong("author_id");
                 }
 
             }
@@ -324,6 +336,7 @@ public class ConfessionModal extends ListenerAdapter {
 
         }catch (SQLException e) {
             log.error("Error on retrieving author id",e);
+            return 0;
         }
 
 

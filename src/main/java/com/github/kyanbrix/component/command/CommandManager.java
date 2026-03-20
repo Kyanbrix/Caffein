@@ -22,6 +22,8 @@ public class CommandManager extends ListenerAdapter {
         this.addCommands(new GetUserAvatar());
         this.addCommands(new GetUserBanner());
         this.addCommands(new SetupConfession());
+        this.addCommands(new VerificationSetup());
+        this.addCommands(new LeaderboardCommand());
     }
 
 

@@ -3,12 +3,15 @@ package com.github.kyanbrix;
 import com.github.kyanbrix.component.ConfessionModal;
 import com.github.kyanbrix.component.RoleCreationModal;
 import com.github.kyanbrix.component.StringSelectionComponent;
+import com.github.kyanbrix.component.VerifyModal;
 import com.github.kyanbrix.component.command.CommandManager;
+import com.github.kyanbrix.component.slashcommand.CheckUserLevel;
+import com.github.kyanbrix.component.slashcommand.LeaderboardProfile;
+import com.github.kyanbrix.component.slashcommand.SlashManager;
 import com.github.kyanbrix.database.ConnectionPool;
-import com.github.kyanbrix.features.Assistant;
-import com.github.kyanbrix.features.InviteTracker;
-import com.github.kyanbrix.features.ServerMemberHandler;
-import com.github.kyanbrix.features.ServerVoiceLogs;
+import com.github.kyanbrix.features.*;
+import com.github.kyanbrix.features.leveling.ChatLeveling;
+import com.github.kyanbrix.features.leveling.VoiceLeveling;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -74,6 +77,11 @@ public class Caffein {
 
         }, "Caffeine-Bot-ShutdownHook"));
 
+        var slashmanager = new SlashManager();
+
+        slashmanager.addCommands(new CheckUserLevel(), new LeaderboardProfile());
+
+
         jda = JDABuilder.create(
                         System.getenv("DISCORD_TOKEN"),
                         GatewayIntent.MESSAGE_CONTENT,
@@ -89,7 +97,8 @@ public class Caffein {
                 .enableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.SCHEDULED_EVENTS,CacheFlag.STICKER)
                 .setMemberCachePolicy(member -> member.getGuild().getIdLong() == 1469324454470353163L)
                 .setChunkingFilter(ChunkingFilter.ALL)
-                .addEventListeners(new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new Assistant(), new ServerVoiceLogs(), new ConfessionModal(), new RoleCreationModal())
+                .addEventListeners(new VoiceLeveling(),new ChatLeveling(),new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new Assistant(), new ServerVoiceLogs(), new ConfessionModal(), new RoleCreationModal(), new VerifyModal())
+                .addEventListeners(slashmanager)
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
 

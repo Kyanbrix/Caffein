@@ -1,21 +1,27 @@
 package com.github.kyanbrix.features;
 
 import club.minnced.discord.webhook.WebhookClient;
-import club.minnced.discord.webhook.send.WebhookEmbed;
-import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import com.github.kyanbrix.Caffein;
+import com.github.kyanbrix.utils.Constant;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdatePrimaryGuildEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.TimeFormat;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,15 +31,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServerMemberHandler extends ListenerAdapter {
 
 
     private static final Logger log = LoggerFactory.getLogger(ServerMemberHandler.class);
     private static final long GUILD_ID = 1469324454470353163L;
-    private static final long LOG_CHANNEL_ID = 1477920159443456194L;
-    private static final long MEMBER_LEFT_LOG_ID = 1477920217270194298L;
-    private static final long SERVER_TAG_LOG_ID = 1477920635748352123L;
+    private static final long MEMBER_JOIN_LOG = 1417919579421806702L;
+    private static final long MEMBER_LEFT_LOG_ID = 1480919286129229945L;
+    private static final long SERVER_TAG_LOG_ID = 1480919662521749524L;
+    private static final long MEMBER_ROLE_LOG_ID = 1417919996893597787L;
+    private static final long MESSAGE_LOG_ID = 1417919677979562084L;
 
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
@@ -42,28 +52,25 @@ public class ServerMemberHandler extends ListenerAdapter {
         Member member = event.getMember();
         Guild guild = event.getGuild();
 
-        if (guild.getIdLong() != GUILD_ID) return;
+        if (guild.getIdLong() != Constant.SERVER_CAFE_ID) return;
 
-        TextChannel logChannel = guild.getTextChannelById(LOG_CHANNEL_ID);
+        TextChannel logChannel = event.getJDA().getTextChannelById(MEMBER_JOIN_LOG);
 
-        WebhookClient client = WebhookClient.withUrl(System.getenv("WELCOME_WEBHOOK"));
+        try (WebhookClient client = WebhookClient.withUrl(System.getenv("WELCOME_WEBHOOK"))) {
 
-        WebhookEmbed.EmbedAuthor author = new WebhookEmbed.EmbedAuthor("New Member", guild.getIconUrl(), null);
 
-        WebhookEmbed webhookEmbed = new WebhookEmbedBuilder()
-                .setAuthor(author)
-                .setDescription(String.format("%s has joined the server", member.getAsMention()))
-                .setColor(15316501)
-                .setThumbnailUrl(member.getUser().getAvatarUrl())
-                .build();
+            WebhookMessage webhookMessage = new WebhookMessageBuilder()
+                    .setUsername(guild.getName())
+                    .setAvatarUrl(guild.getIconUrl())
+                    .setContent(String.format("Welcome, %s! To access the server, please verify your account by completing the questionnaire in the <#1480977686837989546> channel.",member.getAsMention()))
+                    .build();
 
-        WebhookMessage webhookMessage = new WebhookMessageBuilder()
-                .setUsername(guild.getName())
-                .setAvatarUrl(guild.getIconUrl())
-                .addEmbeds(webhookEmbed)
-                .build();
+            client.send(webhookMessage);
 
-        client.send(webhookMessage);
+
+        }catch (Exception e) {
+            log.error(e.getMessage());
+        }
 
         String accountAge = TimeFormat.RELATIVE.format(member.getUser().getTimeCreated());
 
@@ -80,16 +87,43 @@ public class ServerMemberHandler extends ListenerAdapter {
         if (logChannel != null) logChannel.sendMessageEmbeds(embed).queue();
         else log.error("Member joined log channel is null");
 
+
     }
 
+    @Override
+    public void onGuildMemberRoleAdd(@NonNull GuildMemberRoleAddEvent event) {
+        Member member = event.getMember();
+
+
+        JDA jda = event.getJDA();
+
+        List<Role> roles = event.getRoles();
+        TextChannel logChannel = jda.getTextChannelById(1417919996893597787L);
+
+        if (logChannel == null) {
+            log.error("Log channel for member role add is null");
+            return;
+        }
+
+        for (Role role : roles) {
+            EmbedBuilder builder = new EmbedBuilder()
+                    .setAuthor(member.getUser().getName(),null,member.getUser().getAvatarUrl())
+                    .setDescription(String.format("**%s** was added from the ``%s`` role",member.getUser().getName(),role.getName()))
+                    .setColor(Color.green)
+                    .setTimestamp(Instant.now())
+                    .setFooter("User ID: "+member.getId());
+
+            logChannel.sendMessageEmbeds(builder.build()).queue();
+        }
+
+    }
 
     @Override
     public void onGuildMemberRemove(@NotNull GuildMemberRemoveEvent event) {
 
         if (event.getUser().isBot()) return;
 
-        Guild guild = event.getGuild();
-        TextChannel logChannel = guild.getTextChannelById(MEMBER_LEFT_LOG_ID);
+        TextChannel logChannel = event.getJDA().getTextChannelById(MEMBER_LEFT_LOG_ID);
         User user = event.getUser();
 
         if (logChannel != null) {
@@ -103,18 +137,172 @@ public class ServerMemberHandler extends ListenerAdapter {
                     .build();
 
             logChannel.sendMessageEmbeds(embed).queue();
-        }
+
+        }else log.error("member-left log channel is null");
 
 
     }
 
 
     @Override
+    public void onMessageUpdate(@NonNull MessageUpdateEvent event) {
+
+        if (!event.isFromGuild()) return;
+        if (event.getAuthor().isBot()) return;
+
+        String updatedMessage = event.getMessage().getContentRaw();
+
+        try (Connection connection = Caffein.getInstance().getConnection()) {
+            PreparedStatement ps = connection.prepareStatement("SELECT * FROM user_messages WHERE message_id = ?");
+            ps.setLong(1,event.getMessageIdLong());
+
+            try (ResultSet set = ps.executeQuery()) {
+
+                if (set.next()) {
+                    JDA jda = event.getJDA();
+                    String content = set.getString("user_message");
+                    long userId = set.getLong("user_id");
+                    User user = jda.getUserById(userId);
+
+                    if (user == null) {
+                        log.error("This user is not found!");
+                        return;
+                    }
+
+                    if (updatedMessage.equals(content)) return;
+
+                    TextChannel messageLogChannel = jda.getTextChannelById(Constant.MESSAGE_LOG_ID);
+
+                    if (messageLogChannel == null) return;
+
+                    MessageEmbed embed = new EmbedBuilder()
+                            .setAuthor(user.getName(),null,user.getAvatarUrl())
+                            .setDescription(String.format("### Message Edited in %s | %s",event.getChannel().getAsMention(),event.getMessage().getJumpUrl()))
+                            .addField("Before",content,false)
+                            .addField("After",updatedMessage,false)
+                            .setColor(Color.decode("#90EE90"))
+                            .setTimestamp(Instant.now())
+                            .setFooter("User ID: "+userId)
+                            .build();
+
+
+
+                    messageLogChannel.sendMessageEmbeds(embed).queue();
+
+                }
+
+            }
+
+
+        }catch (SQLException e) {
+            log.error("Error on update message",e);
+        }
+
+
+
+    }
+
+    @Override
+    public void onMessageDelete(@NonNull MessageDeleteEvent event) {
+
+        long messageId = event.getMessageIdLong();
+        JDA jda = event.getJDA();
+
+        String channel = event.getChannel().getAsMention();
+
+        String query = "SELECT m.user_id, m.user_message, a.attachment_url " +
+                "FROM user_messages m " +
+                "LEFT JOIN message_attachments a ON m.message_id = a.message_id " +
+                "WHERE m.message_id = ? ";
+        try (Connection connection = Caffein.getInstance().getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setLong(1,messageId);
+
+
+            try (ResultSet set = preparedStatement.executeQuery()) {
+                long userId = 0;
+                List<String> attachments = new ArrayList<>();
+                String content = null;
+
+                while (set.next()) {
+
+                    userId = set.getLong("user_id");
+                    content = set.getString("user_message");
+
+                    String attachment = set.getString("attachment_url");
+
+                    if (attachment != null) {
+                        attachments.add(attachment);
+                    }
+
+                }
+
+
+                User user = jda.getUserById(userId);
+
+                if (user == null) {
+                    log.error("User is null");
+                    return;
+                }
+
+                List<MessageEmbed> messageEmbedList = new ArrayList<>();
+
+                EmbedBuilder builder = new EmbedBuilder()
+                        .setColor(Color.RED)
+                        .setAuthor(user.getName(),null,user.getAvatarUrl())
+                        .setDescription(String.format("### Message sent by %s Deleted in %s\n%s",user.getAsMention(),channel,content != null && !content.isEmpty() ? content : ""))
+                        .setTimestamp(Instant.now())
+                        .setFooter("User ID: "+user.getIdLong());
+
+                if (!attachments.isEmpty()) {
+
+
+
+                    builder.setImage(attachments.getFirst());
+                    messageEmbedList.add(builder.build());
+
+                    for (int i = 1; i < Math.min(attachments.size(),4); i++) {
+
+                        messageEmbedList.add(new EmbedBuilder()
+                                        .setColor(Color.RED)
+                                .setImage(attachments.get(i)).build());
+
+                    }
+
+                }else {
+                    messageEmbedList.add(builder.build());
+                }
+
+                TextChannel logChannel = jda.getTextChannelById(MESSAGE_LOG_ID);
+
+                if (logChannel == null) return;
+
+                logChannel.sendMessageEmbeds(messageEmbedList).queue();
+
+
+
+                try (PreparedStatement deletePs = connection.prepareStatement("DELETE FROM user_messages WHERE message_id = ? ")) {
+                    deletePs.setLong(1,messageId);
+                    deletePs.executeUpdate();
+                }
+
+
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+
+    }
+
+    @Override
     public void onUserUpdatePrimaryGuild(@NotNull UserUpdatePrimaryGuildEvent event) {
         Guild guild = event.getJDA().getGuildById(GUILD_ID);
         if (guild == null) return;
 
-        TextChannel logChannel = guild.getTextChannelById(SERVER_TAG_LOG_ID);
+        TextChannel logChannel = event.getJDA().getTextChannelById(SERVER_TAG_LOG_ID);
+
         if (logChannel == null) {
             log.error("Primary guild log channel is null for guild {}", GUILD_ID);
             return;
@@ -133,7 +321,7 @@ public class ServerMemberHandler extends ListenerAdapter {
 
         if (hasTag && !hadTag) {
             builder.setDescription(String.format("%s used our server tag", user.getAsMention()))
-                    .setColor(Color.decode("#FF4500"));
+                    .setColor(Color.green);
         } else if (!hasTag && hadTag) {
             builder.setDescription(String.format("%s removed our server tag from their profile", user.getAsMention()))
                     .setColor(Color.decode("#FF4500"));
@@ -144,12 +332,76 @@ public class ServerMemberHandler extends ListenerAdapter {
         logChannel.sendMessageEmbeds(builder.build()).queue();
     }
 
+
+    //Message Logs
+    @Override
+    public void onMessageReceived(@NonNull MessageReceivedEvent event) {
+
+        if (event.getAuthor().isBot()) return;
+        if (!event.isFromGuild()) return;
+
+        if (event.getGuild().getIdLong() == 1417918167661023336L) return;
+        if (event.getGuild().getIdLong() == 1357336100514828411L) return;
+
+
+        long messageId = event.getMessageIdLong();
+
+        long userId = event.getAuthor().getIdLong();
+        String content = event.getMessage().getContentRaw();
+        List<Message.Attachment> attachments = event.getMessage().getAttachments();
+        JDA jda = event.getJDA();
+
+        TextChannel channel = jda.getTextChannelById(1480958059755864235L);
+
+        if (channel == null) return;
+
+        try (Connection connection = Caffein.getInstance().getConnection();
+             PreparedStatement ps1 = connection.prepareStatement("INSERT INTO user_messages (message_id, user_id , user_message) VALUES (?,?,?)")){
+             ps1.setLong(1,messageId);
+             ps1.setLong(2,userId);
+             ps1.setString(3,content);
+             ps1.executeUpdate();
+        }catch (SQLException e) {
+            log.error(e.getMessage());
+        }
+
+
+
+        if (!attachments.isEmpty()) {
+
+            if (!attachments.getFirst().isImage()) return;
+
+            attachments.forEach(attachment -> attachment.getProxy().download().thenAccept(inputStream -> channel.sendFiles(FileUpload.fromData(inputStream,attachment.getFileName())).queue(message -> {
+
+                try (Connection connection = Caffein.getInstance().getConnection();
+                     PreparedStatement ps = connection.prepareStatement("INSERT INTO message_attachments (message_id,attachment_url) VALUES (?,?)")) {
+                    ps.setLong(1,messageId);
+                    ps.setString(2,message.getAttachments().getFirst().getUrl());
+
+                    ps.executeUpdate();
+
+                }catch (SQLException e) {
+                    log.error("Error file upload",e);
+                }
+
+            })));
+
+
+        }
+
+
+
+
+    }
+
     @Override
     public void onGuildMemberRoleRemove(@NotNull GuildMemberRoleRemoveEvent event) {
 
         Member member = event.getMember();
 
         Guild guild = event.getGuild();
+
+        JDA jda = event.getJDA();
 
         if (event.getRoles().contains(guild.getBoostRole())) {
 
@@ -190,6 +442,28 @@ public class ServerMemberHandler extends ListenerAdapter {
 
         }
 
+        List<Role> roles = event.getRoles();
+        TextChannel logChannel = jda.getTextChannelById(MEMBER_ROLE_LOG_ID);
+
+        if (logChannel == null) {
+            log.error("Log channel for member role removed is null");
+            return;
+        }
+
+        roles.forEach(role -> {
+
+            EmbedBuilder builder = new EmbedBuilder()
+                    .setAuthor(member.getUser().getName(),null,member.getUser().getAvatarUrl())
+                    .setDescription(String.format("**%s** was removed from the ``%s`` role",member.getUser().getName(),role.getName()))
+                    .setColor(Color.orange)
+                    .setTimestamp(Instant.now())
+                    .setFooter("User ID: "+member.getId());
+
+            logChannel.sendMessageEmbeds(builder.build()).queue();
+        });
 
     }
+
+
+
 }

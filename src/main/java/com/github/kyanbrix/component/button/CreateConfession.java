@@ -16,7 +16,7 @@ public class CreateConfession implements IButton{
 
         Modal modal = Modal.create("confession","My Confession")
                 .addComponents(
-                        Label.of("Confession", TextInput.create("confess", TextInputStyle.PARAGRAPH).setMinLength(8).setRequired(true).build()),
+                        Label.of("Confession", TextInput.create("confess", TextInputStyle.PARAGRAPH).setMinLength(3).setRequired(true).build()),
                         Label.of("Attachment (Optional)", AttachmentUpload.create("attachment-upload").setRequired(false).build())
                 ).build();
 

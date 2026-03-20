@@ -21,6 +21,10 @@ public class ButtonManager extends ListenerAdapter {
         this.addButtons(new CreateRole());
         this.addButtons(new ReplyConfess());
         this.addButtons(new CreateConfession());
+        this.addButtons(new ChatLeaderboard());
+        this.addButtons(new OverallLeaderboard());
+        this.addButtons(new VoiceXpLeaderboard());
+        this.addButtons(new Verify());
     }
 
 
