@@ -115,7 +115,11 @@ public class Caffein extends ListenerAdapter {
                 .enableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.SCHEDULED_EVENTS,CacheFlag.STICKER)
                 .setMemberCachePolicy(member -> member.getGuild().getIdLong() == Constant.SERVER_CAFE_ID)
                 .setChunkingFilter(ChunkingFilter.ALL)
-                .addEventListeners(new VoiceLeveling(),new ChatLeveling(),new CommandManager(), new StringSelectionComponent(), new ButtonManager(), new ServerMemberHandler(), new InviteTracker(), new Assistant(), new ServerVoiceLogs(), new RoleCreationModal(), new ConfessionModal(), new ServerAuditLogsListener())
+                .addEventListeners(new VoiceLeveling(),new ChatLeveling(),new CommandManager(), new StringSelectionComponent(),
+                        new ButtonManager(), new ServerMemberHandler(), new InviteTracker(),
+                        new Assistant(), new ServerVoiceLogs(), new RoleCreationModal(),
+                        new ConfessionModal(), new ServerAuditLogsListener())
+
                 .addEventListeners(slashmanager, INSTANCE)
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
