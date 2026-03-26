@@ -1,8 +1,10 @@
 package com.github.kyanbrix.features;
 
+import com.github.kyanbrix.Caffein;
 import com.google.genai.Chat;
 import com.google.genai.Client;
 import com.google.genai.types.*;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageType;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
@@ -19,8 +21,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Assistant extends ListenerAdapter {
@@ -30,20 +30,18 @@ public class Assistant extends ListenerAdapter {
 
     private final Client geminiClient = new Client();
 
-    private final ExecutorService executor = Executors.newCachedThreadPool();
-
     private final Map<Long, Chat> chatSessions = new ConcurrentHashMap<>();
 
+    private final static Map<Long, Integer> credits = new ConcurrentHashMap<>();
 
-    private final Map<Long, Integer> credits = new ConcurrentHashMap<>();
-
-    private final Map<Long, Long> notificationCooldown = new ConcurrentHashMap<>();
+    private static final Map<Long, Long> notificationCooldown = new ConcurrentHashMap<>();
 
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
 
-        if (!event.isFromGuild() && !event.getAuthor().isBot()) return;
+        if (!event.isFromGuild() || event.getAuthor().isBot()) return;
+        if (!event.getMember().hasPermission(Permission.ADMINISTRATOR)) return;
 
         Message message = event.getMessage();
 
@@ -157,7 +155,7 @@ public class Assistant extends ListenerAdapter {
     }
 
     private void execution(MessageChannel channel, List<Message.Attachment> attachments, boolean hasImage, String prompt) {
-        executor.submit(() -> {
+        Caffein.getInstance().getExecutorService().submit(() -> {
             channel.sendTyping().queue();
 
             try {
