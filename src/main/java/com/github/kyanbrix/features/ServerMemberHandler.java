@@ -259,11 +259,11 @@ public class ServerMemberHandler extends ListenerAdapter {
 
                         for (String attachment : attachments) {
 
-                            logChannel.sendMessageEmbeds(builder.build()).addContent(attachment).queue();
+                            logChannel.sendMessageEmbeds(builder.build()).flatMap(message -> message.getChannel().sendMessage(attachment)).queue();
 
                         }
 
-                    }else logChannel.sendMessageEmbeds(builder.build()).addContent(attachments.getFirst()).queue();
+                    }else logChannel.sendMessageEmbeds(builder.build()).flatMap(message -> message.getChannel().sendMessage(attachments.getFirst())).queue();
 
 
                 }else logChannel.sendMessageEmbeds(builder.build()).queue();
