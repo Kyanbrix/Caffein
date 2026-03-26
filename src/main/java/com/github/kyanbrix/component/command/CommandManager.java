@@ -1,6 +1,5 @@
 package com.github.kyanbrix.component.command;
 
-import com.github.kyanbrix.Caffein;
 import com.github.kyanbrix.utils.Constant;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -12,7 +11,7 @@ import java.util.Map;
 public class CommandManager extends ListenerAdapter {
 
 
-    private final Map<String,ICommand> commands = new HashMap<>();
+    private static final Map<String,ICommand> commands = new HashMap<>();
 
 
 
@@ -24,6 +23,10 @@ public class CommandManager extends ListenerAdapter {
         this.addCommands(new SetupConfession());
         this.addCommands(new VerificationSetup());
         this.addCommands(new LeaderboardCommand());
+        this.addCommands(new RevealConfession());
+        this.addCommands(new ClearCommand());
+        this.addCommands(new PurgeMessage());
+
     }
 
 
