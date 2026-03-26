@@ -1,8 +1,5 @@
 package com.github.kyanbrix.features;
 
-import club.minnced.discord.webhook.WebhookClient;
-import club.minnced.discord.webhook.send.WebhookMessage;
-import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import com.github.kyanbrix.Caffein;
 import com.github.kyanbrix.utils.Constant;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -47,6 +44,8 @@ public class ServerMemberHandler extends ListenerAdapter {
 
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
+        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
+
         if (event.getMember().getUser().isBot()) return;
 
         Member member = event.getMember();
@@ -55,22 +54,6 @@ public class ServerMemberHandler extends ListenerAdapter {
         if (guild.getIdLong() != Constant.SERVER_CAFE_ID) return;
 
         TextChannel logChannel = event.getJDA().getTextChannelById(MEMBER_JOIN_LOG);
-
-        try (WebhookClient client = WebhookClient.withUrl(System.getenv("WELCOME_WEBHOOK"))) {
-
-
-            WebhookMessage webhookMessage = new WebhookMessageBuilder()
-                    .setUsername(guild.getName())
-                    .setAvatarUrl(guild.getIconUrl())
-                    .setContent(String.format("Welcome, %s! To access the server, please verify your account by completing the questionnaire in the <#1480977686837989546> channel.",member.getAsMention()))
-                    .build();
-
-            client.send(webhookMessage);
-
-
-        }catch (Exception e) {
-            log.error(e.getMessage());
-        }
 
         String accountAge = TimeFormat.RELATIVE.format(member.getUser().getTimeCreated());
 
@@ -92,6 +75,8 @@ public class ServerMemberHandler extends ListenerAdapter {
 
     @Override
     public void onGuildMemberRoleAdd(@NonNull GuildMemberRoleAddEvent event) {
+        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
+
         Member member = event.getMember();
 
 
@@ -121,6 +106,8 @@ public class ServerMemberHandler extends ListenerAdapter {
     @Override
     public void onGuildMemberRemove(@NotNull GuildMemberRemoveEvent event) {
 
+        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
+
         if (event.getUser().isBot()) return;
 
         TextChannel logChannel = event.getJDA().getTextChannelById(MEMBER_LEFT_LOG_ID);
@@ -138,7 +125,8 @@ public class ServerMemberHandler extends ListenerAdapter {
 
             logChannel.sendMessageEmbeds(embed).queue();
 
-        }else log.error("member-left log channel is null");
+        }
+
 
 
     }
@@ -147,8 +135,12 @@ public class ServerMemberHandler extends ListenerAdapter {
     @Override
     public void onMessageUpdate(@NonNull MessageUpdateEvent event) {
 
+        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
+
+
         if (!event.isFromGuild()) return;
         if (event.getAuthor().isBot()) return;
+
 
         String updatedMessage = event.getMessage().getContentRaw();
 
@@ -205,6 +197,8 @@ public class ServerMemberHandler extends ListenerAdapter {
     @Override
     public void onMessageDelete(@NonNull MessageDeleteEvent event) {
 
+        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
+
         long messageId = event.getMessageIdLong();
         JDA jda = event.getJDA();
 
@@ -241,11 +235,9 @@ public class ServerMemberHandler extends ListenerAdapter {
                 User user = jda.getUserById(userId);
 
                 if (user == null) {
-                    log.error("User is null");
+                    log.warn("User is null");
                     return;
                 }
-
-                List<MessageEmbed> messageEmbedList = new ArrayList<>();
 
                 EmbedBuilder builder = new EmbedBuilder()
                         .setColor(Color.RED)
@@ -254,32 +246,27 @@ public class ServerMemberHandler extends ListenerAdapter {
                         .setTimestamp(Instant.now())
                         .setFooter("User ID: "+user.getIdLong());
 
-                if (!attachments.isEmpty()) {
-
-
-
-                    builder.setImage(attachments.getFirst());
-                    messageEmbedList.add(builder.build());
-
-                    for (int i = 1; i < Math.min(attachments.size(),4); i++) {
-
-                        messageEmbedList.add(new EmbedBuilder()
-                                        .setColor(Color.RED)
-                                .setImage(attachments.get(i)).build());
-
-                    }
-
-                }else {
-                    messageEmbedList.add(builder.build());
-                }
-
                 TextChannel logChannel = jda.getTextChannelById(MESSAGE_LOG_ID);
 
-                if (logChannel == null) return;
+                if (logChannel == null) {
+                    log.warn("Message Log channel is null");
+                    return;
+                }
 
-                logChannel.sendMessageEmbeds(messageEmbedList).queue();
+                if (!attachments.isEmpty()) {
+
+                    if (attachments.size() > 1) {
+
+                        for (String attachment : attachments) {
+
+                            logChannel.sendMessageEmbeds(builder.build()).addContent(attachment).queue();
+
+                        }
+
+                    }else logChannel.sendMessageEmbeds(builder.build()).addContent(attachments.getFirst()).queue();
 
 
+                }else logChannel.sendMessageEmbeds(builder.build()).queue();
 
                 try (PreparedStatement deletePs = connection.prepareStatement("DELETE FROM user_messages WHERE message_id = ? ")) {
                     deletePs.setLong(1,messageId);
@@ -312,6 +299,10 @@ public class ServerMemberHandler extends ListenerAdapter {
         User.PrimaryGuild newGuild = event.getNewPrimaryGuild();
         User.PrimaryGuild oldGuild = event.getOldPrimaryGuild();
 
+        Role role = guild.getRoleById(1485312660193935661L);
+
+        Member member = guild.getMemberById(user.getIdLong());
+
         EmbedBuilder builder = new EmbedBuilder()
                 .setAuthor(user.getName(), null, user.getAvatarUrl())
                 .setTimestamp(Instant.now());
@@ -322,9 +313,17 @@ public class ServerMemberHandler extends ListenerAdapter {
         if (hasTag && !hadTag) {
             builder.setDescription(String.format("%s used our server tag", user.getAsMention()))
                     .setColor(Color.green);
+
+            if (role != null && member != null) guild.addRoleToMember(member,role).queue();
+
         } else if (!hasTag && hadTag) {
             builder.setDescription(String.format("%s removed our server tag from their profile", user.getAsMention()))
                     .setColor(Color.decode("#FF4500"));
+
+            if (member == null) return;
+
+            if (member.getRoles().contains(role) && role != null) guild.removeRoleFromMember(member,role).queue();
+
         } else {
             return;
         }
@@ -336,12 +335,12 @@ public class ServerMemberHandler extends ListenerAdapter {
     //Message Logs
     @Override
     public void onMessageReceived(@NonNull MessageReceivedEvent event) {
+        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
 
         if (event.getAuthor().isBot()) return;
         if (!event.isFromGuild()) return;
 
-        if (event.getGuild().getIdLong() == 1417918167661023336L) return;
-        if (event.getGuild().getIdLong() == 1357336100514828411L) return;
+        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
 
 
         long messageId = event.getMessageIdLong();
@@ -366,10 +365,7 @@ public class ServerMemberHandler extends ListenerAdapter {
         }
 
 
-
         if (!attachments.isEmpty()) {
-
-            if (!attachments.getFirst().isImage()) return;
 
             attachments.forEach(attachment -> attachment.getProxy().download().thenAccept(inputStream -> channel.sendFiles(FileUpload.fromData(inputStream,attachment.getFileName())).queue(message -> {
 
@@ -396,6 +392,8 @@ public class ServerMemberHandler extends ListenerAdapter {
 
     @Override
     public void onGuildMemberRoleRemove(@NotNull GuildMemberRoleRemoveEvent event) {
+        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
+
 
         Member member = event.getMember();
 
