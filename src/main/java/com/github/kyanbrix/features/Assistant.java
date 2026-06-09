@@ -1,253 +1,177 @@
 package com.github.kyanbrix.features;
 
 import com.github.kyanbrix.Caffein;
-import com.google.genai.Chat;
-import com.google.genai.Client;
-import com.google.genai.types.*;
-import net.dv8tion.jda.api.Permission;
+import com.github.kyanbrix.api.OpenAI.ChatSession;
+import com.github.kyanbrix.api.OpenAI.SessionManager;
+import com.github.kyanbrix.api.OpenAI.service.FileRenderService;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageType;
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 public class Assistant extends ListenerAdapter {
 
 
     private static final Logger log = LoggerFactory.getLogger(Assistant.class);
-
-    private final Client geminiClient = new Client();
-
-    private final Map<Long, Chat> chatSessions = new ConcurrentHashMap<>();
-
-    private final static Map<Long, Integer> credits = new ConcurrentHashMap<>();
-
-    private static final Map<Long, Long> notificationCooldown = new ConcurrentHashMap<>();
+    private final SessionManager sessionManager = new  SessionManager();
 
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
 
         if (!event.isFromGuild() || event.getAuthor().isBot()) return;
-        if (!event.getMember().hasPermission(Permission.ADMINISTRATOR)) return;
 
         Message message = event.getMessage();
 
-        String contentRaw = message.getContentRaw().trim();
+        String channel = event.getChannel().getId();
 
-        if (!contentRaw.contains("<@&1477694522619068466>")) return;
-
-        long userId = event.getAuthor().getIdLong();
-        long currentMillis = System.currentTimeMillis();
+        List<User> mentions = message.getMentions().getUsers();
 
 
-        if (credits.containsKey(userId)) {
+        if (!mentions.isEmpty()) {
 
-            int creditForPrompt = credits.get(userId);
+            if (mentions.getFirst().getIdLong() == event.getJDA().getSelfUser().getIdLong()) {
 
-            if (creditForPrompt == 0) {
+                String removePing = message.getContentRaw().replace("<@1470149609073545377>","");
 
-                if (notificationCooldown.containsKey(userId)) {
-                    if (notificationCooldown.get(event.getAuthor().getIdLong()) < System.currentTimeMillis()) {
-                        event.getChannel().sendMessage("You dont have enough credits to prompt an AI").flatMap(Message::delete).delay(1, TimeUnit.MINUTES).queue();
+                ChatSession chatSession = sessionManager.getOrCreate(channel);
 
-                        notificationCooldown.replace(userId, currentMillis + 60000);
-
-                        return;
-                    }
-
-                }else notificationCooldown.put(userId,currentMillis + 60000);
-
-            } else credits.replace(userId, creditForPrompt - 1);
+                EmbedBuilder builder = new EmbedBuilder();
+                builder.setAuthor("AI ChatBot",null,"https://cdn3.emoji.gg/emojis/2660_Clyde_Bot.png");
+                builder.setColor(0xCD853F);
+                builder.setFooter("Requested by: "+ event.getAuthor().getEffectiveName(),event.getAuthor().getEffectiveAvatarUrl());
+                builder.setTimestamp(Instant.now());
 
 
-        }else credits.put(userId,4);
+                StringBuilder fileTexts = new StringBuilder();
+
+                if (!message.getAttachments().isEmpty()) {
+
+                    for (Message.Attachment attachment : message.getAttachments()) {
+
+                        if (attachment.isVideo()) continue;
+
+                        if (attachment.isImage()) {
+
+                            Caffein.getInstance().getExecutorService().submit(() -> {
+                                event.getChannel().sendTyping().queue();
 
 
-        //removing AI role mention
-        String newContent = contentRaw.replace("<@&1477694522619068466>","").trim();
+                                List<String> chunks = chatSession.chatWithMedia(removePing, List.of(message.getAttachments().stream().map(Message.Attachment::getUrl).toArray(String[]::new)));
 
-        String userName = message.getAuthor().getName();
+                                if (chunks.size() == 1) {
 
-        List<Message.Attachment> attachments = message.getAttachments();
-        boolean hasImage =  !attachments.isEmpty() && attachments.getFirst().isImage();
+                                    message.replyEmbeds(builder.setDescription(chunks.getFirst()).build()).queue();
+                                    return;
+                                }
 
-        ZoneId zoneId = ZoneId.of("Asia/Manila");
-        String currentDateTime = ZonedDateTime.now(zoneId)
-                .format(DateTimeFormatter.ofPattern("MMM dd, yyyy - hh:mm a"));
+                                int index = 0;
 
+                                for (String chunk : chunks) {
 
-
-        //check if the message is a reply
-        if (message.getType().equals(MessageType.INLINE_REPLY)) {
-            Message referenceMessage = message.getReferencedMessage();
-
-
-            List<Message.Attachment> referenceMessageAttachment = referenceMessage.getAttachments();
-
-            if (!referenceMessageAttachment.isEmpty()) {
-                boolean imageAvailable = referenceMessageAttachment.getFirst().isImage();
-
-                String prompt = String.format(
-                        "[System Info: Current local time is %s]\n" +
-                                "Context: The user '%s' is talking to YOU (the AI bot), and they attached a quoted message from '%s' for context.\n" +
-                                "Quoted message from %s: \"%s\"\n" +
-                                "User %s says to YOU: \"%s\"",
-                        currentDateTime,
-                        userName,
-                        referenceMessage.getAuthor().getName(),
-                        referenceMessage.getAuthor().getName(),
-                        referenceMessage.getContentRaw(),
-                        userName,
-                        newContent
-                );
-
-                execution(event.getChannel(),referenceMessageAttachment,imageAvailable,prompt);
+                                    if (index == 0) message.replyEmbeds(builder.setDescription(chunk).build()).queue();
+                                    else
+                                        event.getChannel().sendMessageEmbeds(builder.setDescription(chunk).build()).queue();
+                                    index++;
+                                }
+                            });
 
 
-            }else {
+                        } else {
 
-                String prompt = String.format(
-                        "[System Info: Current local time is %s]\n" +
-                                "Context: The user '%s' is talking to YOU (the AI bot), and they attached a quoted message from '%s' for context.\n" +
-                                "Quoted message from %s: \"%s\"\n" +
-                                "User %s says to YOU: \"%s\"",
-                        currentDateTime,
-                        userName,
-                        referenceMessage.getAuthor().getName(),
-                        referenceMessage.getAuthor().getName(),
-                        referenceMessage.getContentRaw(),
-                        userName,
-                        newContent
-                );
-
-                execution(event.getChannel(), referenceMessageAttachment, false, prompt);
+                            Caffein.getInstance().getExecutorService().submit(() -> {
 
 
-            }
+                                String content = FileRenderService.readFile(attachment.getUrl(), attachment.getFileName());
+
+                                fileTexts.append("\n\n-- File: ")
+                                        .append(attachment.getFileName())
+                                        .append("-- \n")
+                                        .append(content);
 
 
+                                String fullMessage = removePing;
 
+                                if (!fileTexts.isEmpty()) {
+                                    fullMessage += fileTexts.toString();
+                                }
 
+                                event.getChannel().sendTyping().queue();
 
-        }else {
-            String prompt = String.format("[System Info: Current Local time is %s]\n%s says: %s",currentDateTime,userName,newContent);
+                                List<String> chunks = chatSession.chatWithMedia(fullMessage, null);
 
+                                for (String chunk : chunks) {
+                                    message.replyEmbeds(builder.setDescription(chunk).build()).queue();
+                                }
+                            });
 
-            execution(event.getChannel(), attachments, hasImage, prompt);
-        }
-
-
-
-
-    }
-
-    private void execution(MessageChannel channel, List<Message.Attachment> attachments, boolean hasImage, String prompt) {
-        Caffein.getInstance().getExecutorService().submit(() -> {
-            channel.sendTyping().queue();
-
-            try {
-                Content systemInstruction = Content.fromParts(Part.fromText(
-                        "You are a helpful, conversational AI bot in a Discord server. " +
-                                "Your ONLY job is to talk directly to the users. " +
-                                "Do NOT act like a narrator, do NOT analyze the conversation from the outside, and do NOT simulate other users. " +
-                                "Just read the context provided and reply naturally as the AI."
-                ));
-
-                Tool searchTool = Tool.builder()
-                        .googleSearch(GoogleSearch.builder().build())
-                        .build();
-
-                Tool mapsTool = Tool.builder()
-                        .googleMaps(GoogleMaps.builder().build())
-                        .build();
-
-                GenerateContentConfig contentConfig = GenerateContentConfig.builder()
-                        .systemInstruction(systemInstruction)
-                        .tools(List.of(searchTool,mapsTool))
-                        .build();
-
-                Chat chat = chatSessions.computeIfAbsent(channel.getIdLong(), aLong -> geminiClient.chats.create("gemini-2.5-flash",contentConfig));
-
-                GenerateContentResponse response;
-
-                if (hasImage) {
-
-                    Message.Attachment attachment = attachments.getFirst();
-
-                    try (InputStream inputStream = attachment.getProxy().download().join()) {
-                        byte[] imageBytes = inputStream.readAllBytes();
-                        String mimeType = attachment.getContentType();
-
-
-                        Part textPart = Part.builder().text(prompt).build();
-                        Part imagePart = Part.builder()
-                                .inlineData(Blob.builder()
-                                        .data(imageBytes)
-                                        .mimeType(mimeType)
-                                        .build())
-                                .build();
-
-                        Content multi = Content.builder()
-                                .parts(List.of(textPart,imagePart))
-                                .role("user")
-                                .build();
-
-                        response = chat.sendMessage(multi);
+                        }
 
                     }
+
+
+
+
 
                 }else {
-                    response = chat.sendMessage(prompt);
+
+
+                    Caffein.getInstance().getExecutorService().submit(() -> {
+                        event.getChannel().sendTyping().queue();
+
+                        List<String> chunks = chatSession.chatWithMedia(removePing, null);
+
+                        if (chunks.size() == 1) {
+
+                            message.replyEmbeds(builder.setDescription(chunks.getFirst()).build()).queue();
+                            return;
+                        }
+
+                        int index = 0;
+
+                        for (String chunk : chunks) {
+
+                            if (index == 0) message.replyEmbeds(builder.setDescription(chunk).build()).queue();
+                            else event.getChannel().sendMessageEmbeds(builder.setDescription(chunk).build()).queue();
+                            index++;
+                        }
+
+                    });
+
                 }
 
-                sendLongMessage(channel,response.text());
 
 
 
-            } catch (Exception e) {
-                log.error(e.getMessage(),e.fillInStackTrace());
-                channel.sendMessage(e.getMessage()).queue();
-            }
-        });
-    }
 
 
-    private void sendLongMessage(MessageChannel channel, String text) {
-        if (text == null || text.isEmpty()) return;
 
-        int i = 0;
-        while (i < text.length()) {
-            int end = Math.min(i + 1900, text.length());
 
-            if (end < text.length()) {
-                int lastNewline = text.lastIndexOf("\n", end);
-                if (lastNewline > i + 500) {
-                    end = lastNewline + 1;
-                }
+
+
+
             }
 
-            String part = text.substring(i, end).trim();
-            if (!part.isEmpty()) {
-                channel.sendMessage(part).queue();
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException ignored) {}
-            }
-            i = end;
+
+
         }
+
+
+
+
+
+
+
+
+
+
     }
 
 
