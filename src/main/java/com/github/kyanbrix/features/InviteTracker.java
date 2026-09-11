@@ -1,7 +1,7 @@
 package com.github.kyanbrix.features;
 
 import com.github.kyanbrix.utils.Constant;
-import com.github.kyanbrix.utils.invite.InviteData;
+import com.github.kyanbrix.features.data.InviteData;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,8 +24,6 @@ public class InviteTracker extends ListenerAdapter {
 
     private static final long LOG_ID = 1477919584181813404L;
     private static final Logger log = LoggerFactory.getLogger(InviteTracker.class);
-
-    private final Map<String, InviteData> inviteCache = new ConcurrentHashMap<>();
 
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
@@ -38,6 +35,7 @@ public class InviteTracker extends ListenerAdapter {
         if (member.hasPermission(Permission.ADMINISTRATOR) || member.hasPermission(Permission.MANAGE_SERVER) || user.isBot()) return;
 
 
+
         TextChannel logChannel = guild.getTextChannelById(LOG_ID);
 
         guild.retrieveInvites().queue(invites -> {
@@ -45,7 +43,7 @@ public class InviteTracker extends ListenerAdapter {
             for (Invite invite: invites) {
 
                 String code = invite.getCode();
-                final InviteData cache = inviteCache.get(code);
+                final InviteData cache = InviteCache.getInstance().getInviteData(code);
 
                 if (cache == null) continue;
 
@@ -88,8 +86,7 @@ public class InviteTracker extends ListenerAdapter {
 
         String inviteCode = event.getCode();
         final InviteData inviteData = new InviteData(event.getInvite());
-
-        inviteCache.put(inviteCode,inviteData);
+        InviteCache.getInstance().setInviteCache(inviteCode,inviteData);
 
     }
 
@@ -104,13 +101,12 @@ public class InviteTracker extends ListenerAdapter {
 
                 for (Invite invite : invites) {
 
+
                     final InviteData inviteData = new InviteData(invite);
 
-                    inviteCache.put(invite.getCode(),inviteData);
+                    InviteCache.getInstance().setInviteCache(invite.getCode(),inviteData);
 
                 }
-
-                System.out.println("All invites are cached!");
             });
 
 
@@ -126,7 +122,6 @@ public class InviteTracker extends ListenerAdapter {
 
         final String code = event.getCode();
 
-        inviteCache.remove(code);
-
+        InviteCache.getInstance().removeInviteCache(code);
     }
 }
