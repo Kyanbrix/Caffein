@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Connected | caffein-bot</title>
+    <style>
+        :root {
+            --bg: #0f1015;
+            --card-bg: #181920;
+            --border: #2a2c38;
+            --text: #ffffff;
+            --muted: #a1a1aa;
+            --lastfm-red: #d51007;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg); color: var(--text);
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; padding: 20px;
+        }
+        .card {
+            background-color: var(--card-bg); border: 1px solid var(--border);
+            border-radius: 16px; padding: 40px 32px; max-width: 420px;
+            width: 100%; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        .icon-box {
+            width: 64px; height: 64px; background: rgba(213, 16, 7, 0.15);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+        }
+        .icon-box svg { width: 32px; height: 32px; fill: var(--lastfm-red); }
+        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+        p { color: var(--muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 24px; }
+        .username-badge {
+            background: #232530; color: #fff; padding: 4px 10px;
+            border-radius: 6px; font-weight: 600; border: 1px solid var(--border);
+        }
+        .btn {
+            display: inline-block; width: 100%; padding: 12px 20px;
+            border-radius: 8px; font-weight: 600; text-decoration: none;
+            background-color: var(--lastfm-red); color: #fff; transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .redirect-text { font-size: 0.825rem; color: var(--muted); margin-top: 16px; }
+    </style>
+    <script>
+        let seconds = 10;
+        window.onload = () => {
+            const timer = document.getElementById('timer');
+            const interval = setInterval(() => {
+                seconds--;
+                if (timer) timer.textContent = seconds;
+                if (seconds <= 0) {
+                    clearInterval(interval);
+                    window.location.href = "{{PROFILE_URL}}";
+                }
+            }, 1000);
+        };
+    </script>
+</head>
+<body>
+<div class="card">
+    <div class="icon-box">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm-1.89 17.29c-2.42 0-4.38-1.56-4.38-4.22 0-3.18 2.22-5.11 4.88-5.11 1.78 0 3.02.82 3.6 1.95l-1.35.93c-.41-.75-1.18-1.25-2.18-1.25-1.63 0-2.88 1.25-2.88 3.32 0 1.73.98 2.8 2.62 2.8 1.15 0 2.05-.56 2.65-1.58l1.32.88c-.9 1.48-2.28 2.28-4.28 2.28zm8.01 0h-1.92V8.22h1.92v9.07z"/></svg>
+    </div>
+    <h1>Account Connected</h1>
+    <p>Successfully linked <span class="username-badge">{{USERNAME}}</span> with <strong>Kian Bot</strong>.</p>
+    <a href="{{PROFILE_URL}}" class="btn">View Last.fm Profile</a>
+    <div class="redirect-text">Redirecting in <span id="timer">5</span>s...</div>
+</div>
+</body>
+</html>

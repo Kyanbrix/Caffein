@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/src/main/java/com/github/kyanbrix/Caffein.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/github/kyanbrix/component/ConfessionModal.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/github/kyanbrix/component/RoleCreationModal.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/github/kyanbrix/component/button/CreateRole.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/github/kyanbrix/features/ServerMemberHandler.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/github/kyanbrix/features/Starboard.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/github/kyanbrix/features/leveling/ChatLeveling.java" dialect="GenericSQL" />
+  </component>
+</project>

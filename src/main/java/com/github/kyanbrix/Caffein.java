@@ -1,50 +1,43 @@
 package com.github.kyanbrix;
 
 import com.github.kyanbrix.component.ConfessionModal;
-import com.github.kyanbrix.component.RoleCreationModal;
 import com.github.kyanbrix.component.StringSelectionComponent;
 import com.github.kyanbrix.component.command.CommandManager;
-import com.github.kyanbrix.component.slashcommand.CheckUserLevel;
-import com.github.kyanbrix.component.slashcommand.LeaderboardProfile;
-import com.github.kyanbrix.component.slashcommand.SlashManager;
-import com.github.kyanbrix.database.ConnectionPool;
+import com.github.kyanbrix.component.slashcommand.*;
+import com.github.kyanbrix.config.DockerManager;
+import com.github.kyanbrix.config.database.ConnectionPool;
 import com.github.kyanbrix.features.*;
-import com.github.kyanbrix.features.leveling.ChatLeveling;
-import com.github.kyanbrix.features.leveling.VoiceLeveling;
+import com.github.kyanbrix.features.chatfilter.DiscordInvitesChatFilter;
+import com.github.kyanbrix.utils.CallbackServer;
 import com.github.kyanbrix.utils.Constant;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.events.session.ReadyEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
-public class Caffein extends ListenerAdapter {
+public class Caffein {
 
     private static final Caffein INSTANCE = new Caffein();
     private static final Logger log = LoggerFactory.getLogger(Caffein.class);
     private JDA jda;
     private ConnectionPool connectionPool;
     private final ScheduledExecutorService service = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
-    private final ExecutorService executorService = Executors.newFixedThreadPool(3);
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
     public JDA getJda() {
         return jda;
     }
+    private DockerManager dockerManager;
 
     private Caffein() {}
 
@@ -76,13 +69,18 @@ public class Caffein extends ListenerAdapter {
         getInstance().start();
     }
 
-
+    public DockerManager getDockerManager() {
+        return dockerManager;
+    }
 
     public void start() throws InterruptedException {
-        this.connectionPool = new ConnectionPool();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            service.shutdown();
+
+            log.info("Bot is shutdown");
+
+            service.shutdownNow();
+            executorService.shutdownNow();
 
             if (connectionPool != null) {
                 connectionPool.close();
@@ -94,9 +92,28 @@ public class Caffein extends ListenerAdapter {
 
         }, "Caffeine-Bot-ShutdownHook"));
 
+
+        connectionPool = new ConnectionPool();
+
+
+
+        try (Connection connection = connectionPool.getConnection()){
+
+            System.out.println("Connected to the database" + connection.isValid(1));
+
+        }catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
         var slashmanager = new SlashManager();
 
-        slashmanager.addCommands(new CheckUserLevel(), new LeaderboardProfile());
+        slashmanager.addCommands(new GetUserInformation(),
+                new GetGuildInviteInfo(),
+                new TopTracks(),
+                new CurrentPlaying(),
+                new RecentlyPlayingTracks(),
+                new TopArtists());
 
 
         jda = JDABuilder.create(
@@ -110,48 +127,30 @@ public class Caffein extends ListenerAdapter {
                         GatewayIntent.DIRECT_MESSAGES,
                         GatewayIntent.GUILD_EXPRESSIONS,
                         GatewayIntent.SCHEDULED_EVENTS,
-                        GatewayIntent.GUILD_MODERATION
+                        GatewayIntent.GUILD_MODERATION,
+                        GatewayIntent.DIRECT_MESSAGE_REACTIONS
                 )
                 .enableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.SCHEDULED_EVENTS,CacheFlag.STICKER)
                 .setMemberCachePolicy(member -> member.getGuild().getIdLong() == Constant.SERVER_CAFE_ID)
+                .setAutoReconnect(true)
+                .setStatus(OnlineStatus.DO_NOT_DISTURB)
                 .setChunkingFilter(ChunkingFilter.ALL)
-                .addEventListeners(new VoiceLeveling(),new ChatLeveling(),new CommandManager(), new StringSelectionComponent(),
-                        new ButtonManager(), new ServerMemberHandler(), new InviteTracker(),
-                        new Assistant(), new ServerVoiceLogs(), new RoleCreationModal(),
-                        new ConfessionModal(), new ServerAuditLogsListener())
+                .setActivity(Activity.watching("My langga "))
+                .addEventListeners(new CommandManager(), new StringSelectionComponent(),
+                        new ButtonManager(), new InviteTracker(),
+                        new ServerVoiceLogs(), new ConfessionModal(),new Assistant(),
+                        new DiscordInvitesChatFilter(), new BumpListener(), new ServerMemberHandler(),
+                        new AntiRaid())
 
-                .addEventListeners(slashmanager, INSTANCE)
+                .addEventListeners(slashmanager)
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
 
 
+        CallbackServer callbackServer = new CallbackServer();
 
+        callbackServer.start();
 
-
-
-    }
-
-    @Override
-    public void onReady(@NonNull ReadyEvent event) {
-
-        log.info("Bot is Ready!");
-
-        JDA bot = event.getJDA();
-
-
-        service.scheduleAtFixedRate(() -> {
-
-            Guild guild = bot.getGuildById(Constant.SERVER_CAFE_ID);
-
-            if (guild == null) return;
-
-            List<Member> members = guild.getMembers().stream().filter(member -> !member.getUser().isBot()).toList();
-
-            if (members.isEmpty()) return;
-
-            bot.getPresence().setActivity(Activity.watching(String.format("%d members",members.size())));
-
-        },0,1, TimeUnit.MINUTES);
 
 
 
