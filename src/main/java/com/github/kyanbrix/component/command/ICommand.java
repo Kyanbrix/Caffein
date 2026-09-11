@@ -1,5 +1,6 @@
 package com.github.kyanbrix.component.command;
 
+import com.github.kyanbrix.utils.Constant;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 import java.util.ArrayList;
@@ -19,4 +20,7 @@ public interface ICommand {
         event.getMessage().delete().queue();
     }
 
+    default String removePrefixCommand(String message) {
+        return message.substring(Constant.PREFIX.length() + commandName().length()).strip();
+    }
 }
