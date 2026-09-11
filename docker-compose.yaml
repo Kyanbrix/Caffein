@@ -3,14 +3,32 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     container_name: caffeine
-    restart: unless-stopped
+    restart: "no"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
       - WELCOME_WEBHOOK=${WELCOME_WEBHOOK}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASS}
-      - DB_URL=${DB_URL}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - OPENAI_KEY=${OPENAI_KEY}
+      - TAVILY_KEY=${TAVILY_KEY}
+      - SEARCH_ENGINE_ID=$${11caac60452e14afb}
+      - GOOGLE_API_KEY=${AIzaSyAtQYsKIx2gMKzTLXUpVrJ0cucCk-BmWfU}
+      - LAST_FM_API_KEY=${LAST_FM_API_KEY}
+      - LAST_FM_SECRET_KEY=${LAST_FM_SECRET_KEY}
+    ports:
+      - "8080:8080"
+
+  cloudflare_tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflare_tunnel
+    restart: unless-stopped
+    environment:
+      - TUNNEL_TOKEN={TUNNEL_TOKEN}
+    command: tunnel run
+    depends_on:
+      - discord-bot
 
 
