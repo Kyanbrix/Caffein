@@ -1,5 +1,7 @@
 package com.github.kyanbrix.features.leveling.utilities;
 
+import com.github.kyanbrix.features.data.Data;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
@@ -64,12 +66,12 @@ public class ProfileCard {
 
     private static void drawAvatar(Graphics2D g, Data d) {
         BufferedImage av = null;
-        if (d.avatarUrl != null && !d.avatarUrl.isEmpty()) {
+        if (d.avatarUrl() != null && !d.avatarUrl().isEmpty()) {
             try {
-                av = resize(ImageIO.read(URI.create(d.avatarUrl).toURL()), AV_SIZE, AV_SIZE);
+                av = resize(ImageIO.read(URI.create(d.avatarUrl()).toURL()), AV_SIZE, AV_SIZE);
             } catch (Exception ignored) {}
         }
-        if (av == null) av = placeholder(d.username, AV_SIZE);
+        if (av == null) av = placeholder(d.username(), AV_SIZE);
 
         // Drop shadow
         g.setColor(new Color(0, 0, 0, 70));
@@ -89,15 +91,15 @@ public class ProfileCard {
         // Username
         g.setFont(serifBold(28));
         g.setColor(CREAM);
-        g.drawString("@" + d.username, TEXT_X, 34);
+        g.drawString("@" + d.username(), TEXT_X, 34);
 
         // Stats row — fixed Y anchor
         int statY  = 72;
         int cursor = TEXT_X;
 
-        cursor = drawStat(g, "Level:", String.valueOf(d.level), cursor, statY);
-        cursor = drawStat(g, "XP:", formatXP(d.xpProgress) + " / " + formatXP(d.xpNeeded), cursor, statY);
-        drawStat(g, "Rank:", "#" + d.rank, cursor, statY);
+        cursor = drawStat(g, "Level:", String.valueOf(d.level()), cursor, statY);
+        cursor = drawStat(g, "XP:", formatXP(d.xpProgress()) + " / " + formatXP(d.xpNeeded()), cursor, statY);
+        drawStat(g, "Rank:", "#" + d.rank(), cursor, statY);
     }
 
     private static int drawStat(Graphics2D g, String label, String value, int x, int y) {
@@ -117,7 +119,7 @@ public class ProfileCard {
         int   barX  = TEXT_X;
         int   barY  = HEIGHT - BAR_H - 16;
         int   barW  = WIDTH - TEXT_X - 20;
-        float pct   = d.xpNeeded > 0 ? Math.min(1f, (float) d.xpProgress / d.xpNeeded) : 0f;
+        float pct   = d.xpNeeded() > 0 ? Math.min(1f, (float) d.xpProgress() / d.xpNeeded()) : 0f;
         int   filled = Math.max((int)(barW * pct), BAR_H);
 
         // Track
