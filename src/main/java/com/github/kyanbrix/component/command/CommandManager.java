@@ -5,28 +5,24 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CommandManager extends ListenerAdapter {
 
 
-    private static final Map<String,ICommand> commands = new HashMap<>();
+    private final Map<String,ICommand> commands = new ConcurrentHashMap<>();
 
 
 
     public CommandManager() {
-        this.addCommands(new MessageCommandMaker());
-        this.addCommands(new RoleSelectionCommand());
         this.addCommands(new GetUserAvatar());
         this.addCommands(new GetUserBanner());
-        this.addCommands(new SetupConfession());
-        this.addCommands(new VerificationSetup());
-        this.addCommands(new LeaderboardCommand());
-        this.addCommands(new RevealConfession());
-        this.addCommands(new ClearCommand());
         this.addCommands(new PurgeMessage());
-
+        this.addCommands(new SetupComponents());
+        this.addCommands(new AddRole());
+        this.addCommands(new Shutdown());
+        this.addCommands(new ServerAvatar());
     }
 
 

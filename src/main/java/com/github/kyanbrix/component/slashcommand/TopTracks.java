@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.components.section.Section;
 import net.dv8tion.jda.api.components.separator.Separator;
 import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.IntegrationType;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
@@ -72,6 +73,8 @@ public class TopTracks implements ISlash {
         urlBuilder.addQueryParameter("limit","5");
         urlBuilder.addQueryParameter("format","json");
 
+        String baseId = "toptracks:%s:" + userid + ":%d:" + periodSelection;
+
 
 
         Request request = new Request.Builder()
@@ -95,8 +98,6 @@ public class TopTracks implements ISlash {
                 for (LastFmTopTracksResponse.Track track : lastFmTopTracksResponse.getTopTracks().getTracks()) {
 
                     var spotifyData = new SpotifySearchAlbumImage(track.getName(),track.getArtist().getName());
-                    var itunesSearchData = new ItunesSearchTrack(track.getArtist().getName(),track.getName());
-
 
                     if (spotifyData.getSongImage() == null) {
                         event.getHook().sendMessage("Something went wrong! Please try again later.").setEphemeral(true).queue();
@@ -104,11 +105,13 @@ public class TopTracks implements ISlash {
                     }
 
                     components.add(Section.of(
-                            Thumbnail.fromUrl(""),
+                            Thumbnail.fromUrl(spotifyData.getSongImage()),
                             TextDisplay.of(String.format("### %d. [%s](%s)",rank,track.getName(),track.getUrl())),
                             TextDisplay.of("**"+track.getArtist().getName()+"**"),
                             TextDisplay.of(String.format("-# **%s %s**",track.getPlaycount(),track.getPlaycount().equals("1") ? "play" : "plays"))
                     ));
+
+
 
                     components.add(Separator.createInvisible(Separator.Spacing.SMALL));
 
@@ -116,13 +119,23 @@ public class TopTracks implements ISlash {
 
                 }
 
+                components.add(Separator.createDivider(Separator.Spacing.LARGE));
 
-                event.getHook().sendMessageComponents(Container.of(components).withAccentColor(ImageColorExtractor.getColor(event.getUser().getEffectiveAvatarUrl())))
-                        .addComponents(ActionRow.of(
+                components.add(
+                        ActionRow.of(
 
-                                Button.of(ButtonStyle.SECONDARY,"fastprev","fast")
+                                Button.of(ButtonStyle.SECONDARY, String.format(baseId, "fr", 1), Emoji.fromUnicode("U+23EA")).asDisabled(),
+                                // "prev" ensures uniqueness for Previous
+                                Button.of(ButtonStyle.SECONDARY, String.format(baseId, "prev", 1), "Previous").asDisabled(),
+                                // "next" for Next
+                                Button.of(ButtonStyle.SECONDARY, String.format(baseId, "next", 2), "Next"),
+                                // "ff" for Fast Forward
+                                Button.of(ButtonStyle.SECONDARY, String.format(baseId, "ff", 11), Emoji.fromUnicode("U+23E9"))
+                        )
+                );
 
-                        ))
+                event.getHook().sendMessageComponents(Container.of(components)
+                                .withAccentColor(ImageColorExtractor.getColor(event.getUser().getEffectiveAvatarUrl())))
                         .useComponentsV2()
                         .queue();
 

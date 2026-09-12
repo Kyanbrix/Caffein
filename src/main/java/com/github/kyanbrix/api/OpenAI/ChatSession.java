@@ -108,6 +108,8 @@ public class ChatSession {
 
         List<ResponseInputItem> inputs = new ArrayList<>();
 
+
+
         ResponseInputItem.Message.Builder builder = ResponseInputItem.Message.builder()
                 .role(ResponseInputItem.Message.Role.USER)
                 .addInputTextContent(userMessage.isEmpty() ? "" : userMessage);

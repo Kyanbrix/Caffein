@@ -1,7 +1,7 @@
 package com.github.kyanbrix.component.slashcommand;
 
 import com.github.kyanbrix.Caffein;
-import com.github.kyanbrix.features.leveling.utilities.Data;
+import com.github.kyanbrix.features.data.Data;
 import com.github.kyanbrix.features.leveling.utilities.ProfileCard;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;

@@ -18,6 +18,7 @@ services:
       - GOOGLE_API_KEY=${AIzaSyAtQYsKIx2gMKzTLXUpVrJ0cucCk-BmWfU}
       - LAST_FM_API_KEY=${LAST_FM_API_KEY}
       - LAST_FM_SECRET_KEY=${LAST_FM_SECRET_KEY}
+      - TUNNEL_TOKEN = ${TUNNEL_TOKEN}
     ports:
       - "8080:8080"
 

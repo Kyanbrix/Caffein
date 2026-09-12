@@ -6,30 +6,33 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
-import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdatePrimaryGuildEvent;
+import net.dv8tion.jda.api.exceptions.ErrorHandler;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.utils.FileUpload;
-import net.dv8tion.jda.api.utils.TimeFormat;
+import net.dv8tion.jda.api.requests.ErrorResponse;
+import okhttp3.OkHttpClient;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ServerMemberHandler extends ListenerAdapter {
 
@@ -41,6 +44,8 @@ public class ServerMemberHandler extends ListenerAdapter {
     private static final long SERVER_TAG_LOG_ID = 1480919662521749524L;
     private static final long MEMBER_ROLE_LOG_ID = 1417919996893597787L;
     private static final long MESSAGE_LOG_ID = 1417919677979562084L;
+    private final OkHttpClient client = new OkHttpClient();
+    private final String API_KEY = "fUlcmO7isFATUh6lXO0ggGmUgmpMaN6n";
 
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
@@ -50,20 +55,44 @@ public class ServerMemberHandler extends ListenerAdapter {
 
         Member member = event.getMember();
         Guild guild = event.getGuild();
+        JDA jda = event.getJDA();
 
         if (guild.getIdLong() != Constant.SERVER_CAFE_ID) return;
 
         TextChannel logChannel = event.getJDA().getTextChannelById(MEMBER_JOIN_LOG);
+        LocalDateTime start = member.getTimeCreated().toLocalDateTime();
+        LocalDateTime end = LocalDateTime.now(ZoneId.of("Asia/Manila"));
+        Period period = Period.between(start.toLocalDate(),end.toLocalDate());
+        Duration duration = Duration.between(start,end);
 
-        String accountAge = TimeFormat.RELATIVE.format(member.getUser().getTimeCreated());
+
+        String years = period.getYears() == 0 ? "" : period.getYears() + " years,";
+        String months = period.getMonths() == 0 ? "" : period.getMonths() + " months,";
+        String days = period.getDays() == 0 ? "" : period.getDays() + " days,";
+        String hours = duration.toHoursPart() +" hours,";
+        String minutes = duration.toMinutesPart()+" minutes,";
+
+        if (period.getYears() == 0 && period.getMonths() == 0 && period.getDays() < 7) {
+
+            MessageEmbed dmEmbed = new EmbedBuilder()
+                    .setAuthor(member.getEffectiveName(),null,member.getEffectiveAvatarUrl())
+                    .setDescription("Your account has been muted for 7 days for not meeting the required minimum account age of 7 days. **For any questions or concerns, please reach out to an admin or staff member via direct message.**")
+                    .build();
+
+            jda.openPrivateChannelById(member.getIdLong()).flatMap(privateChannel -> privateChannel.sendMessageEmbeds(dmEmbed))
+                    .queue(null,new ErrorHandler().handle(ErrorResponse.CANNOT_SEND_TO_USER,e -> log.error("Cannot send dms to this user")));
+
+            guild.timeoutFor(member,Duration.ofDays(7)).queue();
+
+        }
+
 
         MessageEmbed embed = new EmbedBuilder()
                 .setAuthor("Member Joined", null, member.getAvatarUrl())
-                .addField("User", String.format("%s (%s)", member.getAsMention(), member.getUser().getName()), false)
-                .addField("Account Created", accountAge, false)
+                .addField("User", String.format("%s (%s)", member.getUser().getName(), member.getId()), false)
+                .addField("Account Age", String.format("%s %s %s %s %s",years,months,days,hours,minutes), false)
                 .setColor(Color.ORANGE)
                 .setThumbnail(member.getUser().getAvatarUrl())
-                .setFooter("User ID: " + member.getId())
                 .setTimestamp(Instant.now())
                 .build();
 
@@ -113,6 +142,8 @@ public class ServerMemberHandler extends ListenerAdapter {
         TextChannel logChannel = event.getJDA().getTextChannelById(MEMBER_LEFT_LOG_ID);
         User user = event.getUser();
 
+
+
         if (logChannel != null) {
 
             MessageEmbed embed = new EmbedBuilder()
@@ -131,69 +162,70 @@ public class ServerMemberHandler extends ListenerAdapter {
 
     }
 
+//
+//    @Override
+//    public void onMessageUpdate(@NonNull MessageUpdateEvent event) {
+//
+//        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
+//
+//
+//        if (!event.isFromGuild()) return;
+//        if (event.getAuthor().isBot()) return;
+//
+//
+//        String updatedMessage = event.getMessage().getContentRaw();
+//
+//        try (Connection connection = Caffein.getInstance().getConnection()) {
+//            PreparedStatement ps = connection.prepareStatement("SELECT * FROM user_messages WHERE message_id = ?");
+//            ps.setLong(1,event.getMessageIdLong());
+//
+//            try (ResultSet set = ps.executeQuery()) {
+//
+//                if (set.next()) {
+//                    JDA jda = event.getJDA();
+//                    String content = set.getString("user_message");
+//                    long userId = set.getLong("user_id");
+//                    User user = jda.getUserById(userId);
+//
+//                    if (user == null) {
+//                        log.error("This user is not found!");
+//                        return;
+//                    }
+//
+//                    if (updatedMessage.equals(content)) return;
+//
+//                    TextChannel messageLogChannel = jda.getTextChannelById(Constant.MESSAGE_LOG_ID);
+//
+//                    if (messageLogChannel == null) return;
+//
+//                    MessageEmbed embed = new EmbedBuilder()
+//                            .setAuthor(user.getName(),null,user.getAvatarUrl())
+//                            .setDescription(String.format("### Message Edited in %s | %s",event.getChannel().getAsMention(),event.getMessage().getJumpUrl()))
+//                            .addField("Before",content,false)
+//                            .addField("After",updatedMessage,false)
+//                            .setColor(Color.decode("#90EE90"))
+//                            .setTimestamp(Instant.now())
+//                            .setFooter("User ID: "+userId)
+//                            .build();
+//
+//
+//
+//                    messageLogChannel.sendMessageEmbeds(embed).queue();
+//
+//                }
+//
+//            }
+//
+//
+//        }catch (SQLException e) {
+//            log.error("Error on update message",e);
+//        }
+//
+//
+//
+//    }
 
-    @Override
-    public void onMessageUpdate(@NonNull MessageUpdateEvent event) {
-
-        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
-
-
-        if (!event.isFromGuild()) return;
-        if (event.getAuthor().isBot()) return;
-
-
-        String updatedMessage = event.getMessage().getContentRaw();
-
-        try (Connection connection = Caffein.getInstance().getConnection()) {
-            PreparedStatement ps = connection.prepareStatement("SELECT * FROM user_messages WHERE message_id = ?");
-            ps.setLong(1,event.getMessageIdLong());
-
-            try (ResultSet set = ps.executeQuery()) {
-
-                if (set.next()) {
-                    JDA jda = event.getJDA();
-                    String content = set.getString("user_message");
-                    long userId = set.getLong("user_id");
-                    User user = jda.getUserById(userId);
-
-                    if (user == null) {
-                        log.error("This user is not found!");
-                        return;
-                    }
-
-                    if (updatedMessage.equals(content)) return;
-
-                    TextChannel messageLogChannel = jda.getTextChannelById(Constant.MESSAGE_LOG_ID);
-
-                    if (messageLogChannel == null) return;
-
-                    MessageEmbed embed = new EmbedBuilder()
-                            .setAuthor(user.getName(),null,user.getAvatarUrl())
-                            .setDescription(String.format("### Message Edited in %s | %s",event.getChannel().getAsMention(),event.getMessage().getJumpUrl()))
-                            .addField("Before",content,false)
-                            .addField("After",updatedMessage,false)
-                            .setColor(Color.decode("#90EE90"))
-                            .setTimestamp(Instant.now())
-                            .setFooter("User ID: "+userId)
-                            .build();
-
-
-
-                    messageLogChannel.sendMessageEmbeds(embed).queue();
-
-                }
-
-            }
-
-
-        }catch (SQLException e) {
-            log.error("Error on update message",e);
-        }
-
-
-
-    }
-
+    /*
     @Override
     public void onMessageDelete(@NonNull MessageDeleteEvent event) {
 
@@ -283,6 +315,9 @@ public class ServerMemberHandler extends ListenerAdapter {
 
     }
 
+
+     */
+
     @Override
     public void onUserUpdatePrimaryGuild(@NotNull UserUpdatePrimaryGuildEvent event) {
         Guild guild = event.getJDA().getGuildById(GUILD_ID);
@@ -335,55 +370,60 @@ public class ServerMemberHandler extends ListenerAdapter {
     //Message Logs
     @Override
     public void onMessageReceived(@NonNull MessageReceivedEvent event) {
-        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
 
         if (event.getAuthor().isBot()) return;
         if (!event.isFromGuild()) return;
 
-        if (event.getGuild().getIdLong() != Constant.SERVER_CAFE_ID) return;
 
-
-        long messageId = event.getMessageIdLong();
-
-        long userId = event.getAuthor().getIdLong();
-        String content = event.getMessage().getContentRaw();
-        List<Message.Attachment> attachments = event.getMessage().getAttachments();
-        JDA jda = event.getJDA();
-
-        TextChannel channel = jda.getTextChannelById(1480958059755864235L);
-
-        if (channel == null) return;
-
-        try (Connection connection = Caffein.getInstance().getConnection();
-             PreparedStatement ps1 = connection.prepareStatement("INSERT INTO user_messages (message_id, user_id , user_message) VALUES (?,?,?)")){
-             ps1.setLong(1,messageId);
-             ps1.setLong(2,userId);
-             ps1.setString(3,content);
-             ps1.executeUpdate();
-        }catch (SQLException e) {
-            log.error(e.getMessage());
+        try {
+            urlScanner(event);
+        } catch (IOException e) {
+            log.error("Server Member Handler Error", e);
         }
 
+//        long messageId = event.getMessageIdLong();
 
-        if (!attachments.isEmpty()) {
-
-            attachments.forEach(attachment -> attachment.getProxy().download().thenAccept(inputStream -> channel.sendFiles(FileUpload.fromData(inputStream,attachment.getFileName())).queue(message -> {
-
-                try (Connection connection = Caffein.getInstance().getConnection();
-                     PreparedStatement ps = connection.prepareStatement("INSERT INTO message_attachments (message_id,attachment_url) VALUES (?,?)")) {
-                    ps.setLong(1,messageId);
-                    ps.setString(2,message.getAttachments().getFirst().getUrl());
-
-                    ps.executeUpdate();
-
-                }catch (SQLException e) {
-                    log.error("Error file upload",e);
-                }
-
-            })));
+//        long userId = event.getAuthor().getIdLong();
+//        String content = event.getMessage().getContentRaw();
+//        List<Message.Attachment> attachments = event.getMessage().getAttachments();
+//        JDA jda = event.getJDA();
+//
+//        TextChannel channel = jda.getTextChannelById(1480958059755864235L);
+//
+//        if (channel == null) return;
+//
 
 
-        }
+//        try (Connection connection = Caffein.getInstance().getConnection();
+//             PreparedStatement ps1 = connection.prepareStatement("INSERT INTO user_messages (message_id, user_id , user_message) VALUES (?,?,?)")){
+//             ps1.setLong(1,messageId);
+//             ps1.setLong(2,userId);
+//             ps1.setString(3,content);
+//             ps1.executeUpdate();
+//        }catch (SQLException e) {
+//            log.error(e.getMessage());
+//        }
+
+
+//        if (!attachments.isEmpty()) {
+//
+//            attachments.forEach(attachment -> attachment.getProxy().download().thenAccept(inputStream -> channel.sendFiles(FileUpload.fromData(inputStream,attachment.getFileName())).queue(message -> {
+//
+//                try (Connection connection = Caffein.getInstance().getConnection();
+//                     PreparedStatement ps = connection.prepareStatement("INSERT INTO message_attachments (message_id,attachment_url) VALUES (?,?)")) {
+//                    ps.setLong(1,messageId);
+//                    ps.setString(2,message.getAttachments().getFirst().getUrl());
+//
+//                    ps.executeUpdate();
+//
+//                }catch (SQLException e) {
+//                    log.error("Error file upload",e);
+//                }
+//
+//            })));
+//
+//
+//        }
 
 
 
@@ -463,5 +503,50 @@ public class ServerMemberHandler extends ListenerAdapter {
     }
 
 
+    private void urlScanner(MessageReceivedEvent event) throws IOException {
+
+
+        List<String> links = extractLinks(event.getMessage().getContentRaw());
+
+        MessageChannelUnion channel = event.getChannel();
+
+        if (links.isEmpty()) return;
+
+        String link = links.getFirst();
+
+        if (link.endsWith("/")) link = link.substring(0,link.length() - 1);
+
+        String encodedLink = link.replace("://","%3A%2F%2F").replace("/","%2F");
+        String url = String.format("https://www.ipqualityscore.com/api/json/url/%s/%s",API_KEY,encodedLink);
+
+
+
+
+    }
+
+    private List<String> extractLinks(String text) {
+        List<String> links = new ArrayList<>();
+        String regex = "\\b((?:https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|])";
+
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(text);
+
+        while (matcher.find())
+        {
+            links.add(matcher.group());
+        }
+
+        return links;
+    }
+
+    private MessageEmbed embed(MessageReceivedEvent event,String description) {
+
+        return new EmbedBuilder()
+                .setAuthor(event.getAuthor().getName()+" has been warned",null,event.getAuthor().getEffectiveAvatarUrl())
+                .setColor(Color.red)
+                .setDescription(description)
+                .build();
+
+    }
 
 }

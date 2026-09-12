@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorHandler;
 import net.dv8tion.jda.api.requests.ErrorResponse;
+import net.dv8tion.jda.api.utils.FileUpload;
 
 import java.awt.*;
 
@@ -19,6 +20,7 @@ public class GetUserBanner implements ICommand{
 
         Message originalMessage = event.getMessage();
         MessageChannelUnion channel = event.getChannel();
+
 
         EmbedBuilder builder = new EmbedBuilder();
 
@@ -55,6 +57,7 @@ public class GetUserBanner implements ICommand{
 
             if (mentionUser.getIdLong() == Constant.KIAN_ID) return;
 
+
             mentionUser.retrieveProfile().queue(profile -> {
 
 
@@ -74,7 +77,30 @@ public class GetUserBanner implements ICommand{
 
 
         }catch (Exception e) {
-            originalMessage.reply("That user you've mentioned is not on the server!").queue();
+
+            String id = extractText(originalMessage.getContentRaw());
+
+            event.getJDA().retrieveUserById(id).queue(user -> {
+
+                user.retrieveProfile().queue(profile -> {
+
+                    if (profile.getBanner() == null) {
+                        originalMessage.reply("That user you've mentioned no profile banner!").queue();
+
+                    }else {
+                        profile.getBanner().download(600).whenComplete((inputStream, throwable) -> {
+
+                            channel.sendMessage(user.getName()+"'s banner").addFiles(FileUpload.fromData(inputStream,(profile.getBannerUrl().contains("gif") ? "banner.gif" : "banner.png"))).queue();
+
+                        });
+                    }
+
+
+                });
+
+            },new ErrorHandler().handle(ErrorResponse.UNKNOWN_USER,e1 ->  originalMessage.reply("User not found!").queue()));
+
+
         }
 
 
@@ -90,5 +116,13 @@ public class GetUserBanner implements ICommand{
     @Override
     public String commandName() {
         return "banner";
+    }
+
+
+    private String extractText(String message) {
+
+        return message.substring(Constant.PREFIX.length() + commandName().length()).strip();
+
+
     }
 }

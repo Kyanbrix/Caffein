@@ -24,25 +24,18 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 
 
 public class ConfessionModal extends ListenerAdapter {
@@ -108,10 +101,10 @@ public class ConfessionModal extends ListenerAdapter {
 
 
 
+
         event.getChannel().sendMessageComponents(confessContainer).useComponentsV2().queue(message -> {
 
             logConfession(event.getJDA(),event.getUser(),content,message.getJumpUrl());
-            saveConfessionRecord(message.getIdLong(),event.getUser().getIdLong());
 
         });
 
@@ -205,7 +198,7 @@ public class ConfessionModal extends ListenerAdapter {
         StringBuilder currentLine = new StringBuilder();
 
         for (String word : words) {
-            // Check if single word is too long
+
             if (fm.stringWidth(word) > maxWidth) {
                 // Add current line if it has content
                 if (currentLine.length() > 0) {

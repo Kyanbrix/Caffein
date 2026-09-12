@@ -11,16 +11,22 @@
         <list>
           <option value="Caffein" />
           <option value="Caffein" />
+          <option value="Caffein" />
+          <option value="Caffein" />
         </list>
       </option>
       <option name="ignoredPackages">
         <list>
           <option value="org.json:json:20230618" />
           <option value="ch.qos.logback:logback-core:1.5.20" />
+          <option value="org.apache.httpcomponents:httpclient:4.5.12" />
+          <option value="org.bouncycastle:bcpkix-jdk18on:1.82" />
         </list>
       </option>
       <option name="ignoredReasons">
         <list>
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
           <option value="Not exploitable" />
           <option value="Not exploitable" />
         </list>

@@ -40,7 +40,6 @@ public class StringSelectionComponent extends ListenerAdapter {
                     }
                     else if (value.equalsIgnoreCase("tito")) {
                         toggleRole(member,guild,roleIds,1474718785834586173L);
-
                     }
 
                     event.editComponents(componentTree).useComponentsV2().flatMap(interactionHook -> interactionHook.sendMessage("Your age role is now updated!").setEphemeral(true)).queue();

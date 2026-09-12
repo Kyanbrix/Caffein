@@ -25,8 +25,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatLeveling extends ListenerAdapter {
     private static final Logger log = LoggerFactory.getLogger(ChatLeveling.class);
 
-    private final Map<Long, Long> cachedUserMessageCooldown = new ConcurrentHashMap<>();
+    private static final Map<Long, Long> cachedUserMessageCooldown = new ConcurrentHashMap<>();
     private static final long COOLDOWN = 30000;
+
+    private static final List<Long> channelBlockedList = List.of(1474664358393942158L,1481253289403220008L,
+            1474669488723988625L,1475035056514007082L,
+            1469373119830556803L,1474665619361235097L,
+            1469566405820153887L,1475835067392725092L,
+            1475135156359532617L,1476245439006249153L,
+            1483359632075260024L);
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
@@ -37,7 +44,7 @@ public class ChatLeveling extends ListenerAdapter {
 
         final long channelId = event.getChannel().getIdLong();
 
-        if (channelExcluded().contains(channelId)) return;
+        if (channelBlockedList.contains(channelId)) return;
 
         final long userId = event.getAuthor().getIdLong();
         final long currentMillis = System.currentTimeMillis();
@@ -217,10 +224,5 @@ public class ChatLeveling extends ListenerAdapter {
         return (int) Math.sqrt(totalXP / 100.0);
     }
 
-    private List<Long> channelExcluded() {
-
-        return List.of(1474664358393942158L,1481253289403220008L,1474669488723988625L,1475035056514007082L,1469373119830556803L);
-
-    }
 
 }

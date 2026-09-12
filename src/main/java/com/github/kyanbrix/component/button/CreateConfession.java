@@ -15,7 +15,7 @@ public class CreateConfession implements IButton{
 
         Modal modal = Modal.create("confession","My Confession")
                 .addComponents(
-                        Label.of("Confession", TextInput.create("confess", TextInputStyle.PARAGRAPH).setMaxLength(300).setRequired(true).build())
+                        Label.of("Confession","Write your confession maximum of 300 characters", TextInput.create("confess", TextInputStyle.PARAGRAPH).setMaxLength(300).setRequired(true).build())
                 ).build();
 
         event.replyModal(modal).queue();

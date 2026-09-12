@@ -6,20 +6,14 @@ import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.components.label.Label;
-import net.dv8tion.jda.api.components.textinput.TextInput;
-import net.dv8tion.jda.api.components.textinput.TextInputStyle;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
-import net.dv8tion.jda.api.modals.Modal;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
-public class Verify implements IButton{
+public class Verify implements IButton {
 
     @Override
     public void accept(ButtonInteractionEvent event) {
@@ -32,8 +26,13 @@ public class Verify implements IButton{
         Guild guild = event.getGuild();
         Member member = event.getMember();
 
+
+
+
+
         if ( guild == null ) return;
-        Role role = guild.getRoleById(1472336089657114745L);
+        long VERIFY_ROLE_ID = 1472336089657114745L;
+        Role role = guild.getRoleById(VERIFY_ROLE_ID);
 
         if (role != null && member != null) {
 
@@ -57,6 +56,8 @@ public class Verify implements IButton{
                         .setAvatarUrl(guild.getIconUrl())
                         .addEmbeds(webhookEmbed)
                         .build();
+
+
 
                 client.send(webhookMessage);
 
