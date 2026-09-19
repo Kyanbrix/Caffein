@@ -13,6 +13,7 @@ target/
 *.iml
 *.ipr
 .env
+.topromptignore
 
 ### Eclipse ###
 .apt_generated
