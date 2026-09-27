@@ -27,6 +27,8 @@ public class SetupComponents implements ICommand {
 
         Guild guild = event.getGuild();
 
+        System.out.println("Command: " + command);
+
 
         switch (command) {
 

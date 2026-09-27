@@ -2,11 +2,11 @@ package com.github.kyanbrix;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kyanbrix.component.button.*;
+import com.github.kyanbrix.component.slashcommand.TrackMetadataCache;
+import com.github.kyanbrix.component.slashcommand.data.TrackMetadata;
 import com.github.kyanbrix.component.slashcommand.responses.LastFmTopTracksResponse;
 import com.github.kyanbrix.config.database.UserRepository;
 import com.github.kyanbrix.utils.Constant;
-import com.github.kyanbrix.utils.ImageColorExtractor;
-import com.github.kyanbrix.utils.SpotifySearchAlbumImage;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.buttons.ButtonStyle;
@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,16 +66,9 @@ public class ButtonManager extends ListenerAdapter {
                int targetPage = Integer.parseInt(split[3]);
                String period =  split[4];
 
-               if (event.getUser().getIdLong() != userId) {
-
-                   event.reply("You cannot use that component!").setEphemeral(true).queue();
-                   return;
-               }
-
                event.deferEdit().queue();
 
                paginateLastFmTracks(event, userId, targetPage, period);
-
 
                return;
            }
@@ -138,10 +132,11 @@ public class ButtonManager extends ListenerAdapter {
 
                 int rank = ((targetPage - 1) * 5) + 1;
                 for (LastFmTopTracksResponse.Track track : lastFmResponse.getTopTracks().getTracks()) {
-                    var spotifyImage = new SpotifySearchAlbumImage(track.getName(),track.getArtist().getName());
+
+                    TrackMetadata trackMetadata = TrackMetadataCache.getOrFetchMetadata(track.getArtist().getName(),track.getName());
 
                     components.add(Section.of(
-                            Thumbnail.fromUrl(spotifyImage.getSongImage()), // Add your resolved thumbnail here
+                            Thumbnail.fromUrl(trackMetadata.getArtworkUrl()), // Add your resolved thumbnail here
                             TextDisplay.of(String.format("### %d. [%s](%s)", rank++, track.getName(), track.getUrl())),
                             TextDisplay.of("**" + track.getArtist().getName() + "**"),
                             TextDisplay.of(String.format("-# **%s plays**", track.getPlaycount()))
@@ -159,26 +154,15 @@ public class ButtonManager extends ListenerAdapter {
                 components.add(ActionRow.of(
                         Button.of(ButtonStyle.SECONDARY, String.format(baseId, "fr", 1), Emoji.fromUnicode("U+23EA")).withDisabled(targetPage == 1),
                         Button.of(ButtonStyle.SECONDARY, String.format(baseId, "prev", prevPage), "Previous").withDisabled(targetPage == 1),
-                        Button.of(ButtonStyle.SECONDARY, String.format(baseId, "next", nextPage), "Next"),
-                        Button.of(ButtonStyle.SECONDARY, String.format(baseId, "ff", targetPage + 10), Emoji.fromUnicode("U+23E9"))
+                        Button.of(ButtonStyle.SECONDARY, String.format(baseId, "next", nextPage), "Next").withDisabled(targetPage >= 10),
+                        Button.of(ButtonStyle.SECONDARY, String.format(baseId, "ff", targetPage + 10), Emoji.fromUnicode("U+23E9")).withDisabled(targetPage >= 10)
                 ));
 
 
-                event.getHook().editOriginalComponents(Container.of(components).withAccentColor(ImageColorExtractor.getColor(event.getUser().getEffectiveAvatarUrl()))).useComponentsV2()
+                event.getHook().editOriginalComponents(Container.of(components).withAccentColor(Color.RED)).useComponentsV2()
                         .queue();
 
 
-
-                /**
-                 ActionRow.of(
-                 Button.of(ButtonStyle.SECONDARY, String.format(baseId, "fr", 1), Emoji.fromUnicode("U+23EA")).withDisabled(targetPage == 1),
-                 Button.of(ButtonStyle.SECONDARY, String.format(baseId, "prev", prevPage), "Previous").withDisabled(targetPage == 1),
-                 Button.of(ButtonStyle.SECONDARY, String.format(baseId, "next", nextPage), "Next"),
-                 Button.of(ButtonStyle.SECONDARY, String.format(baseId, "ff", targetPage + 10), Emoji.fromUnicode("U+23E9"))
-                 )
-
-
-               **/
             }
 
 
@@ -191,6 +175,8 @@ public class ButtonManager extends ListenerAdapter {
 
 
     }
+
+
 
     private String getPeriodSelection(String period, String effectiveName) {
         return switch (period) {

@@ -10,6 +10,7 @@ import com.github.kyanbrix.features.*;
 import com.github.kyanbrix.features.chatfilter.DiscordInvitesChatFilter;
 import com.github.kyanbrix.utils.CallbackServer;
 import com.github.kyanbrix.utils.Constant;
+import com.github.kyanbrix.utils.cache.WikiCacheManager;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -84,6 +85,7 @@ public class Caffein {
 
             if (connectionPool != null) {
                 connectionPool.close();
+                log.info("Connection closed");
             }
 
             if (jda != null) {
@@ -95,16 +97,7 @@ public class Caffein {
 
         connectionPool = new ConnectionPool();
 
-
-
-        try (Connection connection = connectionPool.getConnection()){
-
-            System.out.println("Connected to the database" + connection.isValid(1));
-
-        }catch (SQLException e) {
-            e.printStackTrace();
-        }
-
+        WikiCacheManager.loadCache();
 
         var slashmanager = new SlashManager();
 
@@ -113,7 +106,12 @@ public class Caffein {
                 new TopTracks(),
                 new CurrentPlaying(),
                 new RecentlyPlayingTracks(),
-                new TopArtists());
+                new TopArtists(),
+                new SearchLyrics(),
+                new GetCurrentlyPlaySongLyrics(),
+                new Authentication(),
+                new Wiki(),
+                new CharPage());
 
 
         jda = JDABuilder.create(
@@ -140,7 +138,7 @@ public class Caffein {
                         new ButtonManager(), new InviteTracker(),
                         new ServerVoiceLogs(), new ConfessionModal(),new Assistant(),
                         new DiscordInvitesChatFilter(), new BumpListener(), new ServerMemberHandler(),
-                        new AntiRaid())
+                        new AntiRaid(), new AutoComplete())
 
                 .addEventListeners(slashmanager)
                 .setEnableShutdownHook(false)

@@ -21,14 +21,14 @@ public class ValidateUser {
             ps.setLong(1, userid);
 
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
+                return !rs.next();
             }
 
         }catch(Exception e) {
             log.error("Error connecting to database.", e);
         }
 
-        return false;
+        return true;
     }
 
 }

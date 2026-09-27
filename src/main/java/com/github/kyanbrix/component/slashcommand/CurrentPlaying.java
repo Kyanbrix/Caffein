@@ -12,7 +12,6 @@ import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.buttons.ButtonStyle;
 import net.dv8tion.jda.api.components.container.Container;
 import net.dv8tion.jda.api.components.section.Section;
-import net.dv8tion.jda.api.components.separator.Separator;
 import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
 import net.dv8tion.jda.api.interactions.IntegrationType;
@@ -38,7 +37,7 @@ public class CurrentPlaying implements ISlash {
 
         event.deferReply().queue();
 
-        if (!ValidateUser.isUserAuthenticated(event.getUser().getIdLong())) {
+        if (ValidateUser.isUserAuthenticated(event.getUser().getIdLong())) {
             event.getHook().setEphemeral(true).sendMessage("You are not authenticated! Please click the button below to link your Last.Fm account")
                     .addComponents(ActionRow.of(Button.of(ButtonStyle.LINK, CreateAuthenticationUrl.createAuthenticationUrl(event.getUser().getId()),"Authenticate")))
                     .queue();
@@ -78,7 +77,7 @@ public class CurrentPlaying implements ISlash {
 
                         Section.of(
                                 Thumbnail.fromUrl(metadataCache.getArtworkUrl()),
-                                TextDisplay.of(String.format("-# <a:emojigg_cd:1548026549175853067> Now Playing for [%s](https://www.last.fm/user/%s)\n## [%s](%s)\n**%s** • %s",event.getUser().getEffectiveName(),username,track.getName(),track.getUrl(),track.getArtist().getName(),metadataCache.getDurationMs()))
+                                TextDisplay.of(String.format("-# <a:emojigg_cd:1548026549175853067> Now Playing for [%s](https://www.last.fm/user/%s)\n## [%s](%s)\n**%s**",event.getUser().getEffectiveName(),username,track.getName(),track.getUrl(),track.getArtist().getName()))
                         )
 
 

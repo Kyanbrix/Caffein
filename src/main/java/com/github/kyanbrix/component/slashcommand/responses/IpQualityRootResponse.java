@@ -1,9 +1,9 @@
-package com.github.kyanbrix.api;
+package com.github.kyanbrix.component.slashcommand.responses;
 
 import java.util.ArrayList;
 import java.util.Date;
 
-public class IpQualityRoot {
+public class IpQualityRootResponse {
 
     public static class DomainAge {
         public String human;

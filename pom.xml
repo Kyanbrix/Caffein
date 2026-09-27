@@ -139,6 +139,19 @@
             <artifactId>javalin</artifactId>
             <version>7.2.3</version>
         </dependency>
+
+        <dependency>
+            <!-- jsoup HTML parser library @ https://jsoup.org/ -->
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.23.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.gitlab.rxp90</groupId>
+            <artifactId>jsymspell</artifactId>
+            <version>1.0</version>
+        </dependency>
+
     </dependencies>
 
 </project>

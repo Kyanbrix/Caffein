@@ -23,6 +23,7 @@ public class CommandManager extends ListenerAdapter {
         this.addCommands(new AddRole());
         this.addCommands(new Shutdown());
         this.addCommands(new ServerAvatar());
+        this.addCommands(new WikiScraper());
     }
 
 

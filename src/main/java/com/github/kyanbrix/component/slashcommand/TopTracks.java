@@ -1,6 +1,7 @@
 package com.github.kyanbrix.component.slashcommand;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.kyanbrix.component.slashcommand.data.TrackMetadata;
 import com.github.kyanbrix.component.slashcommand.responses.LastFmTopTracksResponse;
 import com.github.kyanbrix.config.database.UserRepository;
 import com.github.kyanbrix.utils.*;
@@ -22,6 +23,7 @@ import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.utils.TimeFormat;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -33,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import se.michaelthelin.spotify.enums.ReleaseDatePrecision;
 import se.michaelthelin.spotify.model_objects.specification.Track;
 
+import java.awt.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -41,7 +44,6 @@ import java.util.List;
 
 public class TopTracks implements ISlash {
     private static final Logger log = LoggerFactory.getLogger(TopTracks.class);
-    public static final int pageSize = 5;
     private final OkHttpClient  client = new OkHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -53,9 +55,10 @@ public class TopTracks implements ISlash {
         long userid = event.getUser().getIdLong();
         final String periodSelection = event.getOption("period", OptionMapping::getAsString);
 
+        
         event.deferReply().queue();
 
-        if (!ValidateUser.isUserAuthenticated(userid)) {
+        if (ValidateUser.isUserAuthenticated(userid)) {
 
             event.getHook().setEphemeral(true).sendMessage("You are not authenticated! Please click the button below to link your Last.Fm account")
                     .addComponents(ActionRow.of(Button.of(ButtonStyle.LINK,CreateAuthenticationUrl.createAuthenticationUrl(event.getUser().getId()),"Authenticate")))
@@ -65,9 +68,11 @@ public class TopTracks implements ISlash {
 
         UserRepository repository = new  UserRepository();
 
+        String username = repository.getUsernameFromLastFm(userid);
+
         HttpUrl.Builder urlBuilder = HttpUrl.parse(Constant.LAST_FM_API_URL).newBuilder();
         urlBuilder.addQueryParameter("method","user.gettoptracks");
-        urlBuilder.addQueryParameter("user",repository.getUsernameFromLastFm(userid));
+        urlBuilder.addQueryParameter("user",username);
         urlBuilder.addQueryParameter("api_key",System.getenv("LAST_FM_API_KEY"));
         urlBuilder.addQueryParameter("period",periodSelection);
         urlBuilder.addQueryParameter("limit","5");
@@ -92,7 +97,7 @@ public class TopTracks implements ISlash {
                 int rank = 1;
 
                 List<ContainerChildComponent> components = new ArrayList<>();
-                components.add(TextDisplay.of(getPeriodSelection(periodSelection,event.getUser().getEffectiveName())));
+                components.add(TextDisplay.of(getPeriodSelection(periodSelection,String.format("[%s](https://www.last.fm/user/%s)",event.getUser().getEffectiveName(),username))));
                 components.add(Separator.createDivider(Separator.Spacing.SMALL));
 
                 for (LastFmTopTracksResponse.Track track : lastFmTopTracksResponse.getTopTracks().getTracks()) {
@@ -104,8 +109,10 @@ public class TopTracks implements ISlash {
                         return;
                     }
 
+                    TrackMetadata trackMetadata = TrackMetadataCache.getOrFetchMetadata(track.getArtist().getName(),track.getName());
+
                     components.add(Section.of(
-                            Thumbnail.fromUrl(spotifyData.getSongImage()),
+                            Thumbnail.fromUrl(trackMetadata.getArtworkUrl()),
                             TextDisplay.of(String.format("### %d. [%s](%s)",rank,track.getName(),track.getUrl())),
                             TextDisplay.of("**"+track.getArtist().getName()+"**"),
                             TextDisplay.of(String.format("-# **%s %s**",track.getPlaycount(),track.getPlaycount().equals("1") ? "play" : "plays"))
@@ -130,12 +137,12 @@ public class TopTracks implements ISlash {
                                 // "next" for Next
                                 Button.of(ButtonStyle.SECONDARY, String.format(baseId, "next", 2), "Next"),
                                 // "ff" for Fast Forward
-                                Button.of(ButtonStyle.SECONDARY, String.format(baseId, "ff", 11), Emoji.fromUnicode("U+23E9"))
+                                Button.of(ButtonStyle.SECONDARY, String.format(baseId, "ff", 10), Emoji.fromUnicode("U+23E9"))
                         )
                 );
 
                 event.getHook().sendMessageComponents(Container.of(components)
-                                .withAccentColor(ImageColorExtractor.getColor(event.getUser().getEffectiveAvatarUrl())))
+                                .withAccentColor(Color.RED))
                         .useComponentsV2()
                         .queue();
 
@@ -155,6 +162,8 @@ public class TopTracks implements ISlash {
     @Override
     public @NonNull CommandData getCommandData() {
 
+
+
         OptionData optionData = new OptionData(OptionType.STRING,"period","Select what period of your top tracks will be queried.",true)
                 .addChoice("Weekly","7day")
                 .addChoice("Monthly","1month")
@@ -163,8 +172,10 @@ public class TopTracks implements ISlash {
                 .addChoice("Quarterly","3month")
                 .addChoice("Overall","overall");
 
-        return Commands.slash("toptracks","Get Spotify Top Tracks")
-                .addOptions(optionData)
+        SubcommandData subcommandData = new SubcommandData("tracks","Get User Top Tracks").addOptions(optionData);
+
+
+        return Commands.slash("top","Top tracks for Last.Fm data").addSubcommands(subcommandData)
                 .setIntegrationTypes(IntegrationType.USER_INSTALL,IntegrationType.GUILD_INSTALL)
                 .setContexts(InteractionContextType.PRIVATE_CHANNEL,InteractionContextType.GUILD);
     }
