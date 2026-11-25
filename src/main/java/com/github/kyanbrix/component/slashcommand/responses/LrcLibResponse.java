@@ -1,5 +1,8 @@
 package com.github.kyanbrix.component.slashcommand.responses;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LrcLibResponse {
 
     public int id;
