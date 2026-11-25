@@ -73,6 +73,9 @@ public class Wiki implements ISlash {
     private static final int SPECIAL_EFFECTS_LIMIT = 500;
     private static final int SELLBACK_LIMIT = 512;
 
+    // Discord shows at most 4 images when it merges same-URL embeds into a gallery
+    private static final int MAX_GALLERY_IMAGES = 4;
+
     /** The wiki's header icons (image-tags/aclarge.png etc.), keyed by file name minus the size suffix. */
     private static final Map<String, String> BADGE_NAMES = Map.of(
             "ac", "AC",
@@ -84,7 +87,7 @@ public class Wiki implements ISlash {
             "future", "Future");
 
     /** Wikidot page tags that name the item's type. */
-    private static final Map<String, String> ITEM_TYPES = Map.ofEntries(
+    static final Map<String, String> ITEM_TYPES = Map.ofEntries(
             Map.entry("armor", "Armor"), Map.entry("class", "Class"), Map.entry("helm", "Helm"),
             Map.entry("back", "Cape"), Map.entry("pet", "Pet"), Map.entry("misc", "Misc"),
             Map.entry("axe", "Axe"), Map.entry("bow", "Bow"), Map.entry("dagger", "Dagger"),
@@ -109,9 +112,9 @@ public class Wiki implements ISlash {
         return thread;
     });
 
-    private record WikiRow(String itemName, String url) {}
+    public record WikiRow(String itemName, String url) {}
 
-    private record WikiPage(
+    public record WikiPage(
             String description,
             String locationLabel,
             String location,
@@ -128,7 +131,7 @@ public class Wiki implements ISlash {
             List<String> badges,
             List<String> sources,
             String access,
-            String imageUrl) {}
+            List<String> imageUrls) {}
 
     @Override
     public void execute(@NonNull SlashCommandInteraction event) {
@@ -157,9 +160,9 @@ public class Wiki implements ISlash {
             return;
         }
 
-        WikiPage page;
+        Document document;
         try {
-            page = fetchPage(row.url());
+            document = fetchDocument(row.url());
         } catch (IOException e) {
             log.warn("Failed to fetch wiki page {} for '{}': {}", row.url(), row.itemName(), e.getMessage());
             event.getHook().sendMessage("Couldn't reach the AQW wiki right now. Try again in a bit, or open the page directly.")
@@ -167,6 +170,13 @@ public class Wiki implements ISlash {
             return;
         }
 
+        // Quest pages hold tabs of quests rather than one item, so they get their own view
+        if (QuestView.isQuestPage(document)) {
+            QuestView.reply(event.getHook(), document, row.url());
+            return;
+        }
+
+        WikiPage page = parsePage(document);
         if (page == null) {
             event.getHook().sendMessage("Could not parse page content for this item.")
                     .addComponents(ActionRow.of(Button.of(ButtonStyle.LINK, row.url(), "View Wiki")))
@@ -174,8 +184,16 @@ public class Wiki implements ISlash {
             return;
         }
 
-        event.getHook().sendMessageEmbeds(buildEmbed(row, page))
-                .addComponents(ActionRow.of(Button.of(ButtonStyle.LINK, row.url(), "View Wiki")))
+        List<Button> buttons = new ArrayList<>();
+        buttons.add(Button.of(ButtonStyle.LINK, row.url(), "View Wiki"));
+        // Only class pages list skills, so only they get the button
+        Button skillsButton = ClassSkills.showButton(document, row.url());
+        if (skillsButton != null) {
+            buttons.add(skillsButton);
+        }
+
+        event.getHook().sendMessageEmbeds(buildEmbeds(row, page))
+                .addComponents(ActionRow.of(buttons))
                 .queue();
     }
 
@@ -184,7 +202,7 @@ public class Wiki implements ISlash {
      * user didn't pick it from autocomplete. Returns the real stored name so the
      * embed title uses the wiki's own casing.
      */
-    private WikiRow findItem(String itemName) throws SQLException {
+    public static WikiRow findItem(String itemName) throws SQLException {
         try (Connection connection = Caffein.getInstance().getConnection();
              PreparedStatement ps = connection.prepareStatement(
                      "SELECT item_name, url FROM wiki WHERE LOWER(item_name) = LOWER(?) LIMIT 1")) {
@@ -196,15 +214,24 @@ public class Wiki implements ISlash {
         }
     }
 
-    private WikiPage fetchPage(String url) throws IOException {
-        Document document = Jsoup.connect(url)
+    public static Document fetchDocument(String url) throws IOException {
+        return Jsoup.connect(url)
                 .userAgent(USER_AGENT)
                 .timeout(FETCH_TIMEOUT_MS)
                 .get();
-        return parsePage(document);
     }
 
-    private WikiPage parsePage(Document document) {
+    /** The page's Wikidot tags ("sword", "shop", "monster", "quest"...), which sit below the content. */
+    public static List<String> pageTags(Document document) {
+        return document.select(".page-tags a").eachText();
+    }
+
+    /** Whether the tags mark an item page (a type like "sword", or a source like "shopitem"). */
+    public static boolean isItemPage(List<String> pageTags) {
+        return pageTags.stream().anyMatch(tag -> ITEM_TYPES.containsKey(tag) || SOURCES.containsKey(tag));
+    }
+
+    public static WikiPage parsePage(Document document) {
         Element pageContent = document.getElementById("page-content");
         if (pageContent == null) {
             return null;
@@ -239,7 +266,7 @@ public class Wiki implements ISlash {
                 parseBadges(pageContent),
                 pageTags.stream().map(SOURCES::get).filter(Objects::nonNull).distinct().toList(),
                 access,
-                findItemImage(pageContent));
+                findItemImages(pageContent));
     }
 
     /** Whole-text match, so "Price:" is found but a sentence that merely starts with "Price" isn't. */
@@ -248,7 +275,7 @@ public class Wiki implements ISlash {
     }
 
     /** Uses the wiki's own wording ("Location" or "Locations") for the field name. */
-    private String parseLocationLabel(Element pageContent) {
+    private static String parseLocationLabel(Element pageContent) {
         Element label = findLabel(pageContent, LOCATION_LABEL);
         if (label == null) {
             return "Location";
@@ -256,7 +283,7 @@ public class Wiki implements ISlash {
         return label.text().replace(":", "").trim();
     }
 
-    private String parseValue(Element pageContent, String labelRegex) {
+    private static String parseValue(Element pageContent, String labelRegex) {
         Element label = findLabel(pageContent, labelRegex);
         return label == null ? "" : valueOf(label);
     }
@@ -265,7 +292,7 @@ public class Wiki implements ISlash {
      * Class pages list each skill with its own "Type:", "Rank Needed:" and
      * "Notes:" labels, so labels inside the skill blocks are skipped.
      */
-    private Element findLabel(Element pageContent, String labelRegex) {
+    private static Element findLabel(Element pageContent, String labelRegex) {
         for (Element label : pageContent.select("strong:matchesOwn(" + labelRegex + "), b:matchesOwn(" + labelRegex + ")")) {
             if (label.closest(".skills, .collapsible-block") == null) {
                 return label;
@@ -286,7 +313,7 @@ public class Wiki implements ISlash {
      * The inline text runs up to the next line break or label. A list only
      * belongs to the label if the label's line is the last one in its paragraph.
      */
-    private String valueOf(Element label) {
+    public static String valueOf(Element label) {
         List<Node> inlineNodes = new ArrayList<>();
         Element listStart = null;
         boolean endsParagraph = true;
@@ -321,7 +348,7 @@ public class Wiki implements ISlash {
     }
 
     /** Renders the list at {@code start}, plus any "OR" alternatives the wiki chains after it. */
-    private List<String> renderListsFrom(Element start) {
+    static List<String> renderListsFrom(Element start) {
         List<String> parts = new ArrayList<>();
         Element list = start;
 
@@ -345,12 +372,32 @@ public class Wiki implements ISlash {
         return parts;
     }
 
+    /**
+     * The plain text after a label, up to the next line break or label, for
+     * callers that want the value without links (skill fields, chest details).
+     */
+    static String plainValue(Element label) {
+        StringBuilder text = new StringBuilder();
+        for (Node node = label.nextSibling(); node != null; node = node.nextSibling()) {
+            if (node instanceof Element el) {
+                if (el.tagName().equals("br") || isLabel(el)) {
+                    break;
+                }
+                text.append(el.text());
+            } else if (node instanceof TextNode tn) {
+                text.append(tn.text());
+            }
+        }
+        // Covers "<strong>Type</strong>: Physical" where the colon sits outside the bold text
+        return text.toString().replaceFirst("^\\s*:", "").replaceAll("\\s+", " ").trim();
+    }
+
     private static boolean isList(Element el) {
         return el.tagName().equals("ul") || el.tagName().equals("ol");
     }
 
     /** A bold "Something:" that starts the next field, as opposed to bold text inside a value. */
-    private static boolean isLabel(Element el) {
+    static boolean isLabel(Element el) {
         if (!el.tagName().equals("strong") && !el.tagName().equals("b")) {
             return false;
         }
@@ -370,7 +417,7 @@ public class Wiki implements ISlash {
     }
 
     /** One bullet per list item, with nested lists (e.g. merge requirements) indented under their parent. */
-    private String renderList(Element list, int depth) {
+    private static String renderList(Element list, int depth) {
         String indent = " ".repeat(depth);
         String bullet = depth == 0 ? "• " : "◦ ";
         List<String> lines = new ArrayList<>();
@@ -406,7 +453,7 @@ public class Wiki implements ISlash {
     }
 
     /** Turns a run of HTML nodes into one line of Discord markdown, keeping links clickable. */
-    private String renderInline(List<Node> nodes) {
+    static String renderInline(List<Node> nodes) {
         StringBuilder out = new StringBuilder();
         appendInline(nodes, out);
 
@@ -416,7 +463,7 @@ public class Wiki implements ISlash {
 
     // Recurses into wrappers like <span>/<em>/<strong>, so a link nested inside
     // formatting still comes out as a link instead of flattened text.
-    private void appendInline(List<Node> nodes, StringBuilder out) {
+    private static void appendInline(List<Node> nodes, StringBuilder out) {
         for (Node node : nodes) {
             if (node instanceof TextNode tn) {
                 out.append(tn.text());
@@ -436,7 +483,7 @@ public class Wiki implements ISlash {
      * ones before the first label count; icons further down sit next to links
      * in the notes and describe other items.
      */
-    private List<String> parseBadges(Element pageContent) {
+    static List<String> parseBadges(Element pageContent) {
         Set<String> badges = new LinkedHashSet<>();
         for (Element el : pageContent.select("img[src*=/image-tags/], strong, b")) {
             if (!el.tagName().equals("img")) {
@@ -447,7 +494,7 @@ public class Wiki implements ISlash {
         return new ArrayList<>(badges);
     }
 
-    private static String badgeName(Element img) {
+    static String badgeName(Element img) {
         String src = img.attr("src");
         String file = src.substring(src.lastIndexOf('/') + 1).replaceFirst("\\.\\w+$", "");
         String key = file.replaceFirst("(large|small)$", "");
@@ -477,20 +524,84 @@ public class Wiki implements ISlash {
                 .collect(Collectors.joining(" "));
     }
 
-    /** The item preview image: first image in the tab view if there is one, otherwise the first non-icon image. */
-    private String findItemImage(Element pageContent) {
+    /**
+     * The item preview images. Armor and class pages show the male and female
+     * versions in "Male"/"Female" tabs, and both are returned; otherwise it's the
+     * first image in a tab view, or failing that the first non-icon image.
+     */
+    static List<String> findItemImages(Element pageContent) {
+        List<String> genderImages = findGenderImages(pageContent);
+        if (!genderImages.isEmpty()) {
+            return genderImages;
+        }
+
         Element tabImage = pageContent.selectFirst(".yui-content img[src]");
         if (tabImage != null) {
-            return tabImage.attr("abs:src");
+            return List.of(tabImage.attr("abs:src"));
         }
 
         for (Element img : pageContent.select("img[src]")) {
             String src = img.attr("src");
             if (!src.contains("/image-tags/") && !src.contains("/classes-skills/") && !src.contains("/sys-images/")) {
-                return img.attr("abs:src");
+                return List.of(img.attr("abs:src"));
+            }
+        }
+        return List.of();
+    }
+
+    /**
+     * <pre>
+     *   &lt;div class="yui-navset"&gt;
+     *     &lt;ul class="yui-nav"&gt;&lt;li&gt;&lt;a&gt;&lt;em&gt;Male&lt;/em&gt;&lt;/a&gt;&lt;/li&gt;&lt;li&gt;...Female...&lt;/li&gt;&lt;/ul&gt;
+     *     &lt;div class="yui-content"&gt;&lt;div&gt;&lt;img src="male.png"&gt;&lt;/div&gt;&lt;div&gt;&lt;img src="female.png"&gt;&lt;/div&gt;&lt;/div&gt;
+     *   &lt;/div&gt;
+     * </pre>
+     * Tabs and their panels pair up by position. Returns the male image then the
+     * female one, or nothing unless both are there.
+     */
+    private static List<String> findGenderImages(Element pageContent) {
+        for (Element navset : pageContent.select(".yui-navset")) {
+            List<String> tabs = navset.select("> ul.yui-nav > li").eachText();
+            Element content = navset.selectFirst("> div.yui-content");
+            if (content == null) {
+                continue;
+            }
+
+            List<Element> panels = content.children();
+            String male = tabImage(tabs, panels, "male");
+            String female = tabImage(tabs, panels, "female");
+            if (male != null && female != null) {
+                return List.of(male, female);
+            }
+        }
+        return List.of();
+    }
+
+    private static String tabImage(List<String> tabs, List<Element> panels, String tabName) {
+        for (int i = 0; i < tabs.size() && i < panels.size(); i++) {
+            if (tabs.get(i).trim().equalsIgnoreCase(tabName)) {
+                Element img = panels.get(i).selectFirst("img[src]");
+                return img == null ? null : img.attr("abs:src");
             }
         }
         return null;
+    }
+
+    /**
+     * Discord merges embeds that share a URL into one, showing each one's image
+     * as a gallery. So every image after the first gets an embed of its own with
+     * just the page URL and that image, and they display as a single embed.
+     */
+    private List<MessageEmbed> buildEmbeds(WikiRow row, WikiPage page) {
+        List<MessageEmbed> embeds = new ArrayList<>();
+        embeds.add(buildEmbed(row, page));
+        for (String imageUrl : page.imageUrls().stream().skip(1).limit(MAX_GALLERY_IMAGES - 1).toList()) {
+            embeds.add(new EmbedBuilder()
+                    .setUrl(row.url())
+                    .setImage(imageUrl)
+                    .build());
+        }
+        return embeds;
     }
 
     private MessageEmbed buildEmbed(WikiRow row, WikiPage page) {
@@ -520,8 +631,8 @@ public class Wiki implements ISlash {
             embed.addField("📝 Notes", truncateLines(page.notes(), NOTES_LIMIT), false);
         }
 
-        if (page.imageUrl() != null && !page.imageUrl().isBlank()) {
-            embed.setImage(page.imageUrl());
+        if (!page.imageUrls().isEmpty()) {
+            embed.setImage(page.imageUrls().getFirst());
         }
 
         return embed.build();
@@ -572,7 +683,7 @@ public class Wiki implements ISlash {
      * Drops whole lines rather than cutting mid-line, so a long list never
      * ends in a half-written markdown link.
      */
-    private static String truncateLines(String text, int maxLength) {
+    static String truncateLines(String text, int maxLength) {
         if (text.length() <= maxLength) {
             return text;
         }
@@ -598,7 +709,7 @@ public class Wiki implements ISlash {
         return out + "\n…and " + (lines.length - shown) + " more";
     }
 
-    private static String truncate(String text, int maxLength) {
+    static String truncate(String text, int maxLength) {
         return text.length() <= maxLength ? text : text.substring(0, maxLength - 1) + "…";
     }
 
