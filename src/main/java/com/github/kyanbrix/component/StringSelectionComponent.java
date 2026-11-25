@@ -1,5 +1,10 @@
 package com.github.kyanbrix.component;
 
+import com.github.kyanbrix.component.slashcommand.CollectionChests;
+import com.github.kyanbrix.component.slashcommand.LastFm;
+import com.github.kyanbrix.component.slashcommand.QuestView;
+import com.github.kyanbrix.component.slashcommand.Shop;
+import com.github.kyanbrix.component.slashcommand.Transcribe;
 import net.dv8tion.jda.api.components.tree.MessageComponentTree;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.ISnowflake;
@@ -18,6 +23,29 @@ public class StringSelectionComponent extends ListenerAdapter {
     public void onStringSelectInteraction(@NotNull StringSelectInteractionEvent event) {
         final String componentId = event.getComponentId();
         final int uniqueId = event.getUniqueId();
+
+        // Checked by ID first: Discord numbers every component in a message, so the
+        // chest menu's unique ID could otherwise land on one of the role menus below.
+        if (componentId.equals(CollectionChests.SELECT_ID)) {
+            CollectionChests.handleSelect(event);
+            return;
+        }
+        if (componentId.startsWith(Shop.FILTER_PREFIX)) {
+            Shop.handleFilter(event);
+            return;
+        }
+        if (componentId.startsWith(LastFm.PERIOD_SELECT_PREFIX)) {
+            LastFm.handlePeriodSelect(event);
+            return;
+        }
+        if (componentId.startsWith(QuestView.SELECT_PREFIX)) {
+            QuestView.handleSelect(event);
+            return;
+        }
+        if (componentId.equals(Transcribe.TRANSLATE_SELECT_ID)) {
+            Transcribe.handleTranslateSelect(event);
+            return;
+        }
 
 
         switch (uniqueId) {
