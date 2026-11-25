@@ -1,4 +1,4 @@
-package com.github.kyanbrix.component.slashcommand.responses;
+package com.github.kyanbrix.api.lastfm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -71,6 +71,11 @@ public class LastFmTopTracksResponse {
 
         public TrackAttributes getAttributes() { return attributes; }
         public void setAttributes(TrackAttributes attributes) { this.attributes = attributes; }
+
+        /** The largest image Last.fm has for this track, or null if it's missing or the grey-star placeholder. */
+        public String getLargestImageUrl() {
+            return LastFmClient.largestImage(image == null ? null : image.stream().map(Image::getUrl).toList());
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
