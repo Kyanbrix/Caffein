@@ -1,4 +1,4 @@
-package com.github.kyanbrix.utils;
+package com.github.kyanbrix.api.lastfm;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
