@@ -1,10 +1,11 @@
-package com.github.kyanbrix.component.slashcommand.responses;
+package com.github.kyanbrix.api.lastfm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LastFmRecentTracksResponse {
 
     @JsonProperty("recenttracks")
@@ -72,6 +73,21 @@ public class LastFmRecentTracksResponse {
         // Helper method to easily check if this track is currently playing
         public boolean isNowPlaying() {
             return attributes != null && "true".equalsIgnoreCase(attributes.getNowPlaying());
+        }
+
+        /** The largest album art Last.fm has for this scrobble, or null if it's missing or the grey-star placeholder. */
+        public String getLargestImageUrl() {
+            return LastFmClient.largestImage(image == null ? null : image.stream().map(Image::getUrl).toList());
+        }
+
+        /** When this track was scrobbled, or null while it's still playing. */
+        public Long getScrobbledAtEpochSecond() {
+            if (date == null || date.getUts() == null) return null;
+            try {
+                return Long.parseLong(date.getUts());
+            } catch (NumberFormatException e) {
+                return null;
+            }
         }
     }
 
