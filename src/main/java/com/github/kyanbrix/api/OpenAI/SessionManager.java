@@ -9,10 +9,15 @@ public class SessionManager {
 
     public ChatSession getOrCreate(String id) {
 
-        return sessions.computeIfAbsent(id, k -> new ChatSession());
+        return sessions.computeIfAbsent(id, ChatSession::new);
 
     }
 
+    /** Forgets a channel's conversation, including the saved history. */
+    public void reset(String id) {
 
+        getOrCreate(id).clearHistory();
+
+    }
 
 }
