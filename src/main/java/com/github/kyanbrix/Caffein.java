@@ -9,25 +9,28 @@ import com.github.kyanbrix.config.database.ConnectionPool;
 import com.github.kyanbrix.features.*;
 import com.github.kyanbrix.features.chatfilter.DiscordInvitesChatFilter;
 import com.github.kyanbrix.utils.CallbackServer;
-import com.github.kyanbrix.utils.Constant;
 import com.github.kyanbrix.utils.cache.WikiCacheManager;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.OnlineStatus;
-import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class Caffein {
+public class Caffein extends ListenerAdapter {
 
     private static final Caffein INSTANCE = new Caffein();
     private static final Logger log = LoggerFactory.getLogger(Caffein.class);
@@ -98,20 +101,26 @@ public class Caffein {
         connectionPool = new ConnectionPool();
 
         WikiCacheManager.loadCache();
-
         var slashmanager = new SlashManager();
 
         slashmanager.addCommands(new GetUserInformation(),
-                new GetGuildInviteInfo(),
-                new TopTracks(),
-                new CurrentPlaying(),
-                new RecentlyPlayingTracks(),
-                new TopArtists(),
-                new SearchLyrics(),
-                new GetCurrentlyPlaySongLyrics(),
-                new Authentication(),
                 new Wiki(),
-                new CharPage());
+                new CharPage(),
+                new GetGuildInviteInfo(),
+                new ChatBot(),
+                new Imagine(),
+                new GenerateVideo(),
+                new Transcribe(),
+                new Speak()
+        );
+        slashmanager.addContextCommands(new Transcribe.MessageMenu());
+
+        // The Last.fm login callback; the bot still works without it, so a failure here isn't fatal
+        try {
+            new CallbackServer().start();
+        } catch (Exception e) {
+            log.error("Failed to start the callback server, so /fm link won't work", e);
+        }
 
 
         jda = JDABuilder.create(
@@ -129,31 +138,33 @@ public class Caffein {
                         GatewayIntent.DIRECT_MESSAGE_REACTIONS
                 )
                 .enableCache(CacheFlag.VOICE_STATE, CacheFlag.EMOJI, CacheFlag.SCHEDULED_EVENTS,CacheFlag.STICKER)
-                .setMemberCachePolicy(member -> member.getGuild().getIdLong() == Constant.SERVER_CAFE_ID)
+                .setChunkingFilter(ChunkingFilter.NONE)
+                .setMemberCachePolicy(MemberCachePolicy.NONE)
                 .setAutoReconnect(true)
-                .setStatus(OnlineStatus.DO_NOT_DISTURB)
-                .setChunkingFilter(ChunkingFilter.ALL)
-                .setActivity(Activity.watching("My langga "))
                 .addEventListeners(new CommandManager(), new StringSelectionComponent(),
                         new ButtonManager(), new InviteTracker(),
                         new ServerVoiceLogs(), new ConfessionModal(),new Assistant(),
                         new DiscordInvitesChatFilter(), new BumpListener(), new ServerMemberHandler(),
                         new AntiRaid(), new AutoComplete())
 
-                .addEventListeners(slashmanager)
+                .addEventListeners(slashmanager, INSTANCE)
                 .setEnableShutdownHook(false)
                 .build().awaitReady();
 
 
-        CallbackServer callbackServer = new CallbackServer();
-
-        callbackServer.start();
+    }
 
 
+    @Override
+    public void onReady(@NonNull ReadyEvent event) {
+
+        JDA jda = event.getJDA();
+
+        List<Guild> guilds = jda.getGuilds();
 
 
+        System.out.println("Guilds size: " + guilds.size());
 
 
     }
-
 }
