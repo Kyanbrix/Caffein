@@ -3,6 +3,7 @@ package com.github.kyanbrix.component.slashcommand;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.kyanbrix.component.slashcommand.data.TrackMetadata;
+import com.github.kyanbrix.utils.Constant;
 import com.github.kyanbrix.utils.ImageColorExtractor;
 import com.github.kyanbrix.utils.ItunesSearchTrack;
 import com.github.kyanbrix.utils.SpotifySearchAlbumImage;
@@ -20,25 +21,38 @@ public class TrackMetadataCache {
     // Private constructor prevents class instantiation
     private TrackMetadataCache() {}
 
-    public static TrackMetadata getOrFetchMetadata(String artist, String trackName) {
-        String cacheKey = (artist + "-" + trackName).toLowerCase();
+    /**
+     * Artwork for a track, trying the art Last.fm already sent first, then
+     * Spotify, then iTunes. Blocks on network calls on a cache miss.
+     *
+     * @param lastFmImageUrl the image from the Last.fm response, or null if it had none
+     */
+    public static TrackMetadata getOrFetchMetadata(String artist, String trackName, String lastFmImageUrl) {
+        // Case-sensitive: differently cased names can be different artists
+        String cacheKey = artist + "\u0000" + trackName;
 
-        return CACHE.get(cacheKey, key -> {
-            SpotifySearchAlbumImage spotifyData = new SpotifySearchAlbumImage(trackName, artist);
-            ItunesSearchTrack itunesData = new ItunesSearchTrack(artist, trackName);
+        TrackMetadata cached = CACHE.getIfPresent(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
 
-            String artworkUrl = spotifyData.getSongImage();
+        String artworkUrl = lastFmImageUrl;
+        if (artworkUrl == null) {
+            artworkUrl = new SpotifySearchAlbumImage(trackName, artist).getSongImage();
+        }
+        if (artworkUrl == null) {
+            artworkUrl = ItunesSearchTrack.findArtwork(artist, trackName);
+        }
 
-            if (artworkUrl == null && itunesData.searchTrackImage()!= null) {
-                artworkUrl = itunesData.searchTrackImage();
-            }
+        if (artworkUrl == null) {
+            // Not cached: the sources may just have been unreachable this time
+            return new TrackMetadata(null, Constant.LAST_FM_RED);
+        }
 
-            Color accentColor = (artworkUrl != null)
-                    ? ImageColorExtractor.getColor(artworkUrl)
-                    : new Color(43, 45, 49); // Dark Discord background fallback
-
-            return new TrackMetadata(artworkUrl, itunesData.formatDurationFromTrack(), accentColor);
-        });
+        Color accentColor = ImageColorExtractor.getColor(artworkUrl);
+        TrackMetadata metadata = new TrackMetadata(artworkUrl, accentColor != null ? accentColor : Constant.LAST_FM_RED);
+        CACHE.put(cacheKey, metadata);
+        return metadata;
     }
 
 }
