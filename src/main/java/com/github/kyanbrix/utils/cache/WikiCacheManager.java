@@ -168,7 +168,7 @@ public class WikiCacheManager {
      * each whitespace-separated word (skipping any leading punctuation), e.g.
      * "Necrotic Sword of Doom" -> "nsod".
      */
-    private static String buildAcronym(String name) {
+    static String buildAcronym(String name) {
         StringBuilder acronym = new StringBuilder();
         for (String word : name.split("\\s+")) {
             for (int i = 0; i < word.length(); i++) {
