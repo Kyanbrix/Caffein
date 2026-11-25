@@ -48,8 +48,8 @@ public class RecentlyPlayingTracks implements ISlash{
 
                         SpotifyApi refreshAccessToken = new SpotifyApi.Builder()
                                 .setRefreshToken(refreshToken)
-                                .setClientId("7b7854760e734015a95888891b4039fc")
-                                .setClientSecret("a1b8497f755c415d8a9c3f0cccaf304b")
+                                .setClientId(System.getenv("SPOTIFY_CLIENT_ID"))
+                                .setClientSecret(System.getenv("SPOTIFY_CLIENT_SECRET"))
                                 .build();
 
 
