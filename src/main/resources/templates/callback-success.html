@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Connected | caffein-bot</title>
+    <title>Account Connected | Caffein</title>
     <style>
         :root {
             --bg: #0f1015;
@@ -43,6 +43,7 @@
             background-color: var(--lastfm-red); color: #fff; transition: opacity 0.2s;
         }
         .btn:hover { opacity: 0.9; }
+        code { background: #232530; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: #fff; }
         .redirect-text { font-size: 0.825rem; color: var(--muted); margin-top: 16px; }
     </style>
     <script>
@@ -66,9 +67,9 @@
         <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm-1.89 17.29c-2.42 0-4.38-1.56-4.38-4.22 0-3.18 2.22-5.11 4.88-5.11 1.78 0 3.02.82 3.6 1.95l-1.35.93c-.41-.75-1.18-1.25-2.18-1.25-1.63 0-2.88 1.25-2.88 3.32 0 1.73.98 2.8 2.62 2.8 1.15 0 2.05-.56 2.65-1.58l1.32.88c-.9 1.48-2.28 2.28-4.28 2.28zm8.01 0h-1.92V8.22h1.92v9.07z"/></svg>
     </div>
     <h1>Account Connected</h1>
-    <p>Successfully linked <span class="username-badge">{{USERNAME}}</span> with <strong>Kian Bot</strong>.</p>
+    <p>Successfully linked <span class="username-badge">{{USERNAME}}</span> with <strong>Caffein</strong>. You can go back to Discord and try <code>/fm now</code>.</p>
     <a href="{{PROFILE_URL}}" class="btn">View Last.fm Profile</a>
-    <div class="redirect-text">Redirecting in <span id="timer">5</span>s...</div>
+    <div class="redirect-text">Redirecting to your profile in <span id="timer">10</span>s…</div>
 </div>
 </body>
 </html>
