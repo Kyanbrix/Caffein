@@ -21,3 +21,12 @@ docker-compose.yaml
 .dockerignore
 
 *.log
+
+# npm packages are installed inside the image
+node_modules/
+**/node_modules/
+
+# local-only files
+images/
+.claude/
+CLAUDE.md
