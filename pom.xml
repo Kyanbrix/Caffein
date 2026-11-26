@@ -16,6 +16,18 @@
 
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <!-- The Node renderers run from the working directory, not the classpath. -->
+                <excludes>
+                    <exclude>node_modules/**</exclude>
+                    <exclude>package.json</exclude>
+                    <exclude>package-lock.json</exclude>
+                    <exclude>render-*.js</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
 
             <plugin>
@@ -100,16 +112,6 @@
             <artifactId>HikariCP</artifactId>
             <version>7.0.2</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java</artifactId>
-            <version>3.7.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java-transport-httpclient5</artifactId>
-            <version>3.7.1</version>
         </dependency>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
