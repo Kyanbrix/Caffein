@@ -92,22 +92,8 @@ final class LastFmViews {
 
         List<ContainerChildComponent> components = new ArrayList<>();
         components.add(withArtwork(metadata.artworkUrl(), text.toString()));
-        components.add(Separator.createDivider(Separator.Spacing.SMALL));
+        components.add(Separator.createDivider(Separator.Spacing.LARGE));
         components.add(TextDisplay.of("-# " + number(totalScrobbles) + " scrobbles in total"));
-
-        List<Button> buttons = new ArrayList<>();
-        if (track.getUrl() != null) {
-            buttons.add(Button.link(track.getUrl().replace("*", "%2A"), "Open on Last.fm"));
-        }
-        String artistUrl = info != null && info.getArtist() != null && info.getArtist().getUrl() != null
-                ? info.getArtist().getUrl()
-                : artistUrlFromTrackUrl(track.getUrl());
-        if (artistUrl != null) {
-            buttons.add(Button.link(artistUrl, "Artist"));
-        }
-        buttons.add(Button.link(LastFmClient.profileUrl(username), "Profile"));
-        components.add(ActionRow.of(buttons));
-
         return Container.of(components).withAccentColor(metadata.accentColor());
     }
 
