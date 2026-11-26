@@ -4,7 +4,6 @@ import com.github.kyanbrix.component.ConfessionModal;
 import com.github.kyanbrix.component.StringSelectionComponent;
 import com.github.kyanbrix.component.command.CommandManager;
 import com.github.kyanbrix.component.slashcommand.*;
-import com.github.kyanbrix.config.DockerManager;
 import com.github.kyanbrix.config.database.ConnectionPool;
 import com.github.kyanbrix.features.*;
 import com.github.kyanbrix.features.chatfilter.DiscordInvitesChatFilter;
@@ -25,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,7 +41,6 @@ public class Caffein extends ListenerAdapter {
     public JDA getJda() {
         return jda;
     }
-    private DockerManager dockerManager;
 
     private Caffein() {}
 
@@ -73,15 +72,24 @@ public class Caffein extends ListenerAdapter {
         getInstance().start();
     }
 
-    public DockerManager getDockerManager() {
-        return dockerManager;
-    }
-
     public void start() throws InterruptedException {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 
-            log.info("Bot is shutdown");
+            log.info("Bot is shutting down");
+
+            // Disconnect from Discord first so no new events arrive while the
+            // executors and the DB pool are being closed.
+            if (jda != null) {
+                jda.shutdown();
+                try {
+                    if (!jda.awaitShutdown(Duration.ofSeconds(10))) {
+                        jda.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
 
             service.shutdownNow();
             executorService.shutdownNow();
@@ -89,10 +97,6 @@ public class Caffein extends ListenerAdapter {
             if (connectionPool != null) {
                 connectionPool.close();
                 log.info("Connection closed");
-            }
-
-            if (jda != null) {
-                jda.shutdown();
             }
 
         }, "Caffeine-Bot-ShutdownHook"));
