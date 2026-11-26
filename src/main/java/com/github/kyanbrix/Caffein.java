@@ -111,7 +111,14 @@ public class Caffein extends ListenerAdapter {
                 new Imagine(),
                 new GenerateVideo(),
                 new Transcribe(),
-                new Speak()
+                new Speak(),
+                new TopArtists(),
+                new Transcribe(),
+                new RecentlyPlayingTracks(),
+                new LastFm(),
+                new SearchLyrics(),
+                new Shop(),
+                new CollectionChests()
         );
         slashmanager.addContextCommands(new Transcribe.MessageMenu());
 
